@@ -4,4 +4,9 @@ Thumbs.db
 *.log
 dist/
 .cws.json
-private/
+
+# Local only: store listing material, internal test notes, release script
+docs/MAGAZA.md
+docs/TESTLER.md
+docs/store/
+scripts/
