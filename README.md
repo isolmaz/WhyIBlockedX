@@ -14,6 +14,7 @@
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-v3-4a4a4a?style=flat-square">
   <img alt="Chrome and Edge 127+" src="https://img.shields.io/badge/chrome%20%7C%20edge-127%2B-4a4a4a?style=flat-square">
   <img alt="Local only" src="https://img.shields.io/badge/data-local%20only-00ba7c?style=flat-square">
+  <a href="https://github.com/isolmaz/WhyIBlockedX/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/isolmaz/WhyIBlockedX/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-4a4a4a?style=flat-square"></a>
 </p>
 
@@ -87,6 +88,17 @@ docs/             User guide (Turkish), README media
 ```
 
 No build step, no dependencies. [Changelog](CHANGELOG.md) · [Guide](docs/KURULUM.md)
+
+## Checks
+
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and every pull request. It needs Node.js and runs two checks; run the same ones locally from the repository root:
+
+```
+find src -name '*.js' -print0 | xargs -0 -n1 node --check   # JS syntax
+node .github/ci/check-manifest.js                      # manifest references and locale JSON
+```
+
+There are no unit or end-to-end tests in CI.
 
 ## License
 
