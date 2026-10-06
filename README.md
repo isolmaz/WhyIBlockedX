@@ -95,7 +95,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push t
 
 ```
 find src -name '*.js' -print0 | xargs -0 -n1 node --check   # JS syntax
-node .github/scripts/check-manifest.js                      # manifest references and locale JSON
+node .github/ci/check-manifest.js                      # manifest references and locale JSON
 ```
 
 There are no unit or end-to-end tests in CI.
