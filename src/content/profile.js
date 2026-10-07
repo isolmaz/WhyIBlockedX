@@ -1,6 +1,6 @@
 (() => {
   const panels = new Map(), groups = new Map();
-  let timer, revision=0, lastPath=location.pathname, lastOwner='';
+  let timer, updating=false, queued=false, revision=0, lastPath=location.pathname, lastOwner='';
   const text=node=>(node?.innerText||node?.textContent||'').trim();
   const own=(el,root)=>!el.closest('article,[data-testid="UserCell"],[data-wibx-host]')&&(!WIBX.previewRoot(el)||WIBX.previewRoot(el)===root);
   function node(tag,cls,value){const el=document.createElement(tag);if(cls)el.className=cls;if(value!=null)el.textContent=value;return el;}
@@ -18,7 +18,8 @@ textarea,input{display:block;width:100%;font:inherit;font-size:15px;color:var(--
 textarea{min-height:88px;resize:vertical}textarea:focus,input:focus{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}textarea::placeholder,input::placeholder{color:var(--muted)}
 .actions{display:flex;gap:12px;align-items:center;margin-top:12px}.save{min-height:34px;padding:0 16px;border-radius:9999px;background:var(--fg);color:var(--bg);font-weight:700;transition:opacity .2s}.save:hover{opacity:.9}
 .error{font-size:13px;color:#f4212e;margin-top:8px}.error:empty{display:none}:focus-visible{outline:2px solid var(--primary);outline-offset:2px}textarea:focus-visible,input:focus-visible{outline:none}button:disabled{opacity:.5;cursor:default}`;
-  function schedule(){if(!timer)timer=setTimeout(()=>{timer=null;update().catch(()=>{});},100);}
+  // update() awaits the background; never run two at once or both insert a panel for the same root.
+  function schedule(){if(!timer)timer=setTimeout(()=>{timer=null;if(updating){queued=true;return;}updating=true;update().catch(()=>{}).finally(()=>{updating=false;if(queued){queued=false;schedule();}});},100);}
   function contexts(){
     const result=[];const primary=document.querySelector('[data-testid="primaryColumn"]')||document.querySelector('main');
     if(primary&&WIBX.profileName())result.push({root:primary,context:{handle:WIBX.profileName(),owner:WIBX.owner(),scope:'Profile',path:location.pathname}});

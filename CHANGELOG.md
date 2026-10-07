@@ -1,5 +1,16 @@
 # Değişiklik günlüğü
 
+## 0.5.2 — 7 Ekim 2026
+
+### Düzeltmeler
+- Engelle, sessize al veya geri al başlatılamadığında (önceki işlem sürüyor, hedef hesap bulunamadı, profil güncelleniyor ya da açık bir onay penceresi var) tıklama sessizce yutuluyordu; nedeni artık bildirimde görünür.
+- Arka plan geç yanıt verdiğinde profil veya önizleme notu iki kez eklenebiliyordu; panel güncellemeleri artık sırayla çalışır.
+- Popup Kayıtlar gibi bir alt sayfadayken kapatılıp yeniden açılınca geri düğmesi kayboluyor, ana sayfaya dönülemiyordu.
+
+### Depo
+- `main`’e gelen her değişiklik CI’dan geçer. Yükseltilen sürüm, GitHub Actions’ta onaylanınca Chrome Web Store’a yüklenip incelemeye gönderilir ve GitHub’da yayımlanır (`docs/YAYINLAMA.md`).
+- README ve kurulum kılavuzu Chrome Web Store sayfasına bağlanır; mağaza ve kaynaktan kurulum arasında yedekle geçiş anlatılır.
+
 ## 0.5.1 — 6 Ekim 2026
 
 ### Yeni

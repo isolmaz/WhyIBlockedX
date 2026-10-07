@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.5.1-1d9bf0?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.5.2-1d9bf0?style=flat-square">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-v3-4a4a4a?style=flat-square">
   <img alt="Chrome and Edge 127+" src="https://img.shields.io/badge/chrome%20%7C%20edge-127%2B-4a4a4a?style=flat-square">
   <img alt="Local only" src="https://img.shields.io/badge/data-local%20only-00ba7c?style=flat-square">
@@ -60,13 +60,17 @@ Everything stays in your browser's local storage. No servers, accounts, sync or 
 
 ## Install
 
-**From source** (until the Chrome Web Store listing is live):
+**Chrome Web Store:** [WhyIBlockedX](https://chromewebstore.google.com/detail/enmdpnmbnmmlnfchlbolggldjnmbappb), then reload open X tabs. Store installs update automatically.
+
+**From source:**
 
 1. `git clone https://github.com/isolmaz/WhyIBlockedX.git`
 2. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
 3. **Load unpacked** → select the cloned folder, then reload open X tabs.
 
 To update, run `git pull` and click **Reload** on the extensions page; your records are kept.
+
+The store and source installs keep separate records. To move from one to the other, use **Backup → Download backup** in the old one and **Restore from backup** in the new one.
 
 ## Notes
 
@@ -84,14 +88,14 @@ src/i18n.js       English and Turkish interface strings
 _locales/         Store description (en, tr)
 src/content/      Scripts injected into X
 src/popup/        Records, settings and backup UI
-docs/             User guide (Turkish), README media
+docs/             User guide and release process (Turkish), README media
 ```
 
 No build step, no dependencies. [Changelog](CHANGELOG.md) · [Guide](docs/KURULUM.md)
 
 ## Checks
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and every pull request. It needs Node.js and runs two checks; run the same ones locally from the repository root:
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every pull request and, through [`release.yml`](.github/workflows/release.yml), on every push to `main`. It needs Node.js and runs two checks; run the same ones locally from the repository root:
 
 ```
 find src -name '*.js' -print0 | xargs -0 -n1 node --check   # JS syntax
@@ -99,6 +103,8 @@ node .github/ci/check-manifest.js                      # manifest references and
 ```
 
 There are no unit or end-to-end tests in CI.
+
+**Releases:** a version bump on `main` is sent to the Chrome Web Store only after it is approved in GitHub Actions. See [docs/YAYINLAMA.md](docs/YAYINLAMA.md) (Turkish).
 
 ## License
 
