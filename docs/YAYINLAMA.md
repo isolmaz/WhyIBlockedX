@@ -26,11 +26,21 @@ Google incelemesi geçince sürüm kendiliğinden yayına girer. İnceleme birka
 2. `manifest.json` içindeki `version` değerini yükselt (ör. `0.5.2` → `0.5.3`) ve `README.md` sürüm rozetini güncelle.
 3. `CHANGELOG.md` en üstüne `## 0.5.3 — 8 Ekim 2026` biçiminde bir bölüm yaz. Bu bölüm release notu olur; yoksa yayın durur.
 4. Commit’le (`WhyIBlockedX 0.5.3`) ve `main`’e push et.
-5. GitHub onay ister: e-posta ya da bildirim gelir, Actions’ta çalışma **Waiting** görünür. **Review deployments** → `chrome-web-store` → **Approve and deploy**.
+5. GitHub onay ister; e-posta gelir. Onayı sen verirsin:
+   1. E-postadaki linki ya da [Actions → Release](https://github.com/isolmaz/WhyIBlockedX/actions/workflows/release.yml) altındaki en üstteki **Waiting** çalışmayı aç.
+   2. Üstteki sarı kutuda *“chrome-web-store needs approval to start deploying changes”* yazar. **Review deployments**’a bas.
+   3. Açılan pencerede **chrome-web-store** kutusunu işaretle ve **Approve and deploy**’a bas.
    - Henüz yayınlamak istemiyorsan **Reject** de. Bu sürüm gönderilmez; `main`’e bir sonraki push’ta yeniden sorulur.
-6. İş bitince **Chrome Web Store** adımında `Submitted 0.5.3 for review: PENDING_REVIEW` görünür.
+6. Yaklaşık bir dakika sonra **publish** işi biter. **Chrome Web Store** adımında `Submitted 0.5.3 for review: PENDING_REVIEW` görünür ve GitHub’da `v0.5.3` release’i açılır.
 
 Yayını yeniden denemek için: Actions → **Release** → **Run workflow** (`main`). Bu da onay ister. Sürüm zaten yayındaysa ya da incelemedeyse paket tekrar yüklenmez, yalnızca eksik GitHub release’i açılır.
+
+## Gönderimden sonra
+
+- Developer Dashboard’da sürüm **İncelemeyi bekliyor** olarak görünür. **Eski sürüm bu sırada yayında kalır**; kullanıcılar onu kullanmaya devam eder.
+- İnceleme geçince yeni sürüm kendiliğinden yayına girer ve kullanıcıların Chrome’u birkaç saat içinde günceller. Yapman gereken bir şey yok.
+- İnceleme sürerken aynı eklenti için yeni sürüm gönderilemez; yayın işi `PENDING_REVIEW` hatasıyla durur (bkz. Sorun giderme).
+- **Google reddederse** eski sürüm yayında kalır; nedeni e-postayla ve Dashboard’da bildirilir. GitHub’daki `v0.5.3` release’i zaten açıldığı için aynı sürüm yeniden gönderilmez: sorunu düzelt, sürümü yükselt (`0.5.4`), CHANGELOG’a yaz ve push et.
 
 ## Sorun giderme
 
@@ -42,6 +52,8 @@ Yayını yeniden denemek için: Actions → **Release** → **Run workflow** (`m
 | Mağaza sürümü reddediyor (sürüm küçük/aynı) | `manifest.json` sürümünü mağazadakinden büyük yap. |
 
 ## Kurulum (bir kez yapıldı)
+
+Bu adımlar her sürümde tekrarlanmaz; yalnızca anahtar yenilenirken ya da hesap değişirken gerekir.
 
 - Google Cloud projesi `cws-publish-510912`: Chrome Web Store API açık, `github-publisher` hizmet hesabı (rol yok).
 - Developer Dashboard → **Ayarlar → Hizmet hesabı**: yukarıdaki e-posta ekli.
