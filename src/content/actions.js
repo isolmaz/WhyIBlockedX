@@ -45,12 +45,14 @@
   }
   function closeMenu() { document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true})); document.dispatchEvent(new KeyboardEvent('keyup',{key:'Escape',code:'Escape',bubbles:true})); }
   WIBX.runAction = async ({context,element,menu,kind,action,report}) => {
-    if (active) throw Error(WIBX.t('errBusy'));
-    if (!context?.handle) throw Error(WIBX.t('errNoTarget'));
+    // These checks run before the try/finally below; report them here so the intercepted click does not fail silently.
+    const reject = message => { report?.(message); showStatus(message); return Error(message); };
+    if (active) throw reject(WIBX.t('errBusy'));
+    if (!context?.handle) throw reject(WIBX.t('errNoTarget'));
     const route = location.pathname, account = WIBX.owner();
     const valid = () => route === location.pathname && account === WIBX.owner() && (context.scope !== 'Profile' || WIBX.profileName().toLowerCase() === context.handle.toLowerCase()) && (!menu || WIBX.contextFor(menu).handle.toLowerCase() === context.handle.toLowerCase());
-    if (!valid()) throw Error(WIBX.t('errProfileUpdating'));
-    if (document.querySelector('[data-testid="confirmationSheetConfirm"]')) throw Error(WIBX.t('errCloseDialog'));
+    if (!valid()) throw reject(WIBX.t('errProfileUpdating'));
+    if (document.querySelector('[data-testid="confirmationSheetConfirm"]')) throw reject(WIBX.t('errCloseDialog'));
     active = {context}; WIBX.actionBusy=true; style(); document.documentElement.dataset.wibxRunning='1';
     let outcome = null, requestKey = '', confirmed = false, startedAt = 0, drivenMenu = null;
     const listener = result => { if (result.requestKey === requestKey) outcome = result; };
