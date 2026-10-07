@@ -4,6 +4,12 @@ Chrome veya Edge masaüstü, sürüm 127 ya da sonrası. Türkçe ve İngilizce 
 
 ## İlk kurulum
 
+**Chrome Web Store’dan (önerilen):** [WhyIBlockedX](https://chromewebstore.google.com/detail/enmdpnmbnmmlnfchlbolggldjnmbappb) sayfasında **Chrome’a ekle**’ye bas, açık X sekmelerini yenile. Mağaza kurulumu kendiliğinden güncellenir; aşağıdaki **Güncelleme** adımları yalnızca kaynaktan kurulum içindir.
+
+Mağaza kurulumu ile kaynaktan kurulumun kayıtları ayrıdır. Birinden diğerine geçerken eskisinde **Yedekleme → Yedek indir**, yenisinde **Yedekleme → Yedekten yükle** kullan.
+
+**Kaynaktan:**
+
 1. Depoyu klonla ya da GitHub'da **Code → Download ZIP** ile indirip kalıcı bir klasöre çıkar:
    ```sh
    git clone https://github.com/isolmaz/WhyIBlockedX.git

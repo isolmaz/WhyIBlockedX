@@ -8,7 +8,8 @@
 - Popup Kayıtlar gibi bir alt sayfadayken kapatılıp yeniden açılınca geri düğmesi kayboluyor, ana sayfaya dönülemiyordu.
 
 ### Depo
-- `main`’e gelen her değişiklik CI’dan geçer. `manifest.json` sürümü yükseldiğinde paket Chrome Web Store’a yüklenip incelemeye gönderilir ve aynı sürüm GitHub’da yayımlanır (`.github/workflows/release.yml`).
+- `main`’e gelen her değişiklik CI’dan geçer. Yükseltilen sürüm, GitHub Actions’ta onaylanınca Chrome Web Store’a yüklenip incelemeye gönderilir ve GitHub’da yayımlanır (`docs/YAYINLAMA.md`).
+- README ve kurulum kılavuzu Chrome Web Store sayfasına bağlanır; mağaza ve kaynaktan kurulum arasında yedekle geçiş anlatılır.
 
 ## 0.5.1 — 6 Ekim 2026
 
