@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.5.1-1d9bf0?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.5.2-1d9bf0?style=flat-square">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-v3-4a4a4a?style=flat-square">
   <img alt="Chrome and Edge 127+" src="https://img.shields.io/badge/chrome%20%7C%20edge-127%2B-4a4a4a?style=flat-square">
   <img alt="Local only" src="https://img.shields.io/badge/data-local%20only-00ba7c?style=flat-square">
