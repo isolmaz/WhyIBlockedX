@@ -147,7 +147,7 @@
       if (!count) { state = 'idle'; note = ''; sync(); return; }
       approved = fastUsers ? new Set(fastUsers.map(user => user.handle.toLowerCase())) : new Set(collect().keys());
       state = 'confirm'; note = ''; sync();
-    } else if (state === 'confirm') run();
+    } else if (state === 'confirm' && location.pathname === mountedPath) run();
   }
   function onSecondary(event) {
     if (!event?.isTrusted) return;
@@ -296,8 +296,8 @@
       writeChain = writeChain.then(async () => {
         try {
           const result = await WIBX.send({ type: 'bulkAdd', records: batch });
-          saved += result.added || 0;
-          counts.skipped += result.skipped || 0;
+          // Accounts that already had an active record were still blocked on X.
+          saved += (result.added || 0) + (result.skipped || 0);
         } catch { saveFailed += batch.length; }
         counts.blocked = base + saved;
         counts.failed = failed + saveFailed;

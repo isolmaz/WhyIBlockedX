@@ -7,6 +7,9 @@
 - Kendi hesabın her zaman atlanır; tek tek arayüz akışı zaten “engeli kaldır” gösterenleri de atlar. Hızlı yol zaten engellenmiş bir hesaba yeniden istek gönderebilir, yinelenen kayıt açılmaz. X üst üste hata verirse veya sayfa/hesap değişirse akış durur; hız sınırına takılırsa kalanlar durdurulur.
 - Engellenen her hesap için mevcut geçmişe normal bir yerel kayıt eklenir: kullanıcı adı, X döndürdüyse görünen ad, engelleme işlemi, gönderi bağlantısı ve boş neden. Neden uydurulmaz; beğenen listesi veya istek bilgisi saklanmaz. Yetkilendirme başlıkları yalnız bellekte, başka sayfaya geçene kadar tutulur; depoya yazılmaz. Yeni izin, sunucu, eşitleme veya analitik yok.
 
+### Depo
+- Eklenti Chrome Web Store’da değil. Yükseltilen sürüm `main`’e gelince ZIP paketi otomatik olarak GitHub Releases’te yayımlanır; kurulum ve güncelleme bu paketle yapılır (`docs/YAYINLAMA.md`, `docs/KURULUM.md`).
+
 ## 0.5.2 — 7 Ekim 2026
 
 ### Düzeltmeler

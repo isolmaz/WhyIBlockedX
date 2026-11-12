@@ -4,18 +4,14 @@ Chrome veya Edge masaüstü, sürüm 127 ya da sonrası. Türkçe ve İngilizce 
 
 ## İlk kurulum
 
-**Chrome Web Store’dan (önerilen):** [WhyIBlockedX](https://chromewebstore.google.com/detail/enmdpnmbnmmlnfchlbolggldjnmbappb) sayfasında **Chrome’a ekle**’ye bas, açık X sekmelerini yenile. Mağaza kurulumu kendiliğinden güncellenir; aşağıdaki **Güncelleme** adımları yalnızca kaynaktan kurulum içindir.
+Eklenti GitHub Releases üzerinden dağıtılır.
 
-Mağaza kurulumu ile kaynaktan kurulumun kayıtları ayrıdır. Birinden diğerine geçerken eskisinde **Yedekleme → Yedek indir**, yenisinde **Yedekleme → Yedekten yükle** kullan.
-
-**Kaynaktan:**
-
-1. Depoyu klonla ya da GitHub'da **Code → Download ZIP** ile indirip kalıcı bir klasöre çıkar:
+1. [GitHub Releases](https://github.com/isolmaz/WhyIBlockedX/releases/latest) sayfasından `WhyIBlockedX-v<sürüm>.zip` dosyasını indir ve kalıcı bir klasöre çıkar. Kaynaktan kurmak istersen depoyu klonla:
    ```sh
    git clone https://github.com/isolmaz/WhyIBlockedX.git
    ```
 2. `chrome://extensions` (Edge: `edge://extensions`) sayfasında **Geliştirici modu**nu aç.
-3. **Paketlenmemiş öğe yükle** ile `manifest.json` dosyasının bulunduğu klasörü (deponun kökü) seç.
+3. **Paketlenmemiş öğe yükle** ile `manifest.json` dosyasının bulunduğu klasörü seç.
 4. Açık X sekmelerini yenile ve eklentiyi araç çubuğuna sabitle.
 
 ## Güncelleme
@@ -25,7 +21,7 @@ Mağaza kurulumu ile kaynaktan kurulumun kayıtları ayrıdır. Birinden diğeri
 3. Eklentiyi kaldırma; eklentiler sayfasında **Yenile** düğmesine bas.
 4. Açık X sekmelerini yenile.
 
-Paketlenmemiş eklentinin kimliği klasör yoluna bağlıdır. **Aynı klasörü kullanmak kimliği ve kayıtları korur.** Farklı bir klasörden yüklersen boş bir eklenti açılır; yedeğini **Yedekleme → Yedekten yükle** ile geri aktarabilirsin. Eski “Neden” sürümünden gelen kurulumlar için de aynı yol geçerlidir.
+Paketlenmemiş eklentinin kimliği klasör yoluna bağlıdır. **Aynı klasörü kullanmak kimliği ve kayıtları korur.** Farklı bir klasörden yüklersen boş bir eklenti açılır; yedeğini **Yedekleme → Yedekten yükle** ile geri aktarabilirsin. Daha önce Chrome Web Store’dan kurulmuş bir kopya ve eski “Neden” sürümünden gelen kurulumlar için de aynı yol geçerlidir: eskisinde **Yedekleme → Yedek indir**, yenisinde **Yedekleme → Yedekten yükle**.
 
 ## İşlem akışları
 

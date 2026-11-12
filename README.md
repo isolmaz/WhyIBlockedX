@@ -67,17 +67,17 @@ Everything stays in your browser's local storage. No servers, accounts, sync or 
 
 ## Install
 
-**Chrome Web Store:** [WhyIBlockedX](https://chromewebstore.google.com/detail/enmdpnmbnmmlnfchlbolggldjnmbappb), then reload open X tabs. Store installs update automatically.
+**From a release (recommended):**
 
-**From source:**
-
-1. `git clone https://github.com/isolmaz/WhyIBlockedX.git`
+1. Download `WhyIBlockedX-v<version>.zip` from [GitHub Releases](https://github.com/isolmaz/WhyIBlockedX/releases/latest) and extract it to a folder you will keep.
 2. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
-3. **Load unpacked** → select the cloned folder, then reload open X tabs.
+3. **Load unpacked** → select the extracted folder (the one with `manifest.json`), then reload open X tabs.
 
-To update, run `git pull` and click **Reload** on the extensions page; your records are kept.
+To update, back up first, extract the new ZIP over the same folder and click **Reload** on the extensions page; your records are kept.
 
-The store and source installs keep separate records. To move from one to the other, use **Backup → Download backup** in the old one and **Restore from backup** in the new one.
+**From source:** `git clone https://github.com/isolmaz/WhyIBlockedX.git`, then load the cloned folder the same way. To update, run `git pull` and click **Reload**.
+
+Each install folder keeps its own records, and so does a copy installed earlier from the Chrome Web Store. To move records, use **Backup → Download backup** in the old install and **Restore from backup** in the new one.
 
 ## Notes
 
@@ -112,7 +112,7 @@ node --test tests/*.test.mjs                           # URL helpers, i18n parit
 
 There are no browser end-to-end tests in CI.
 
-**Releases:** a version bump on `main` is sent to the Chrome Web Store only after it is approved in GitHub Actions. See [docs/YAYINLAMA.md](docs/YAYINLAMA.md) (Turkish).
+**Releases:** a version bump on `main` publishes the packaged ZIP as a [GitHub release](https://github.com/isolmaz/WhyIBlockedX/releases). See [docs/YAYINLAMA.md](docs/YAYINLAMA.md) (Turkish).
 
 ## License
 
