@@ -76,6 +76,8 @@ form>label{display:block;margin:16px 0 0;font-size:13px;line-height:16px;color:v
 form>label input,form>label select,form>label textarea{display:block;width:100%;max-width:none;margin-top:4px;color:var(--fg);font-size:15px}
 form>label select{height:44px}
 #manual-form .primary{margin:16px 0}
+#bulk-form{margin-top:16px}
+#bulk-form .primary{margin:16px 0}
 
 h2{margin:16px 0 8px;font-size:20px;line-height:24px}
 #confirm-text{margin:0;color:var(--muted)}

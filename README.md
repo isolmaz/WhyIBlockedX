@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.5.2-1d9bf0?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-0.6.0-1d9bf0?style=flat-square">
   <img alt="Manifest V3" src="https://img.shields.io/badge/manifest-v3-4a4a4a?style=flat-square">
   <img alt="Chrome and Edge 127+" src="https://img.shields.io/badge/chrome%20%7C%20edge-127%2B-4a4a4a?style=flat-square">
   <img alt="Local only" src="https://img.shields.io/badge/data-local%20only-00ba7c?style=flat-square">
@@ -42,10 +42,17 @@ Search and filter your records, edit reasons, change settings and back up your d
 
 > The recordings use a simulated X page with the real extension loaded.
 
+### 4. Block everyone who liked a post
+
+Open the popup, choose **Bulk block**, paste a post link and press **Open likes page**. On the likes page a compact **Block likers** panel loads the full liker list through X's own session, shows the exact count and asks for confirmation. It then blocks them in parallel through X's own block request, so a large list does not wait on one-by-one UI clicks. If that fast path is unavailable, it falls back to the one-by-one UI and only blocks the already-loaded set you confirmed.
+
+**Stop** stops scheduling new blocks; requests already in flight may finish. Your own account and accounts that already show an unblock control are skipped. Each blocked account gets a normal record with the post link and an empty note. X's rate limits or interface changes can pause the run.
+
 ## Features
 
 - **Reasons on profiles** — your note and the related post appear under the profile and in hover cards.
 - **One-click actions** — block, mute and undo from profiles, hover cards, post menus and account lists.
+- **Bulk blocking** — load the exact liker count, confirm once, then block in parallel with a one-by-one fallback; stop whenever you want.
 - **History kept** — unblocking marks a record as ended instead of deleting it; reuse an earlier reason in one click.
 - **Drafts** — unfinished notes survive reloads and browser restarts.
 - **Native look** — follows X's theme, accent colour and font.
@@ -85,7 +92,7 @@ manifest.json     Extension manifest (root)
 src/background.js Service worker; serialises storage writes
 src/shared.js     Defaults, themes, URL validation
 src/i18n.js       English and Turkish interface strings
-_locales/         Store description (en, tr)
+_locales/         Localized extension description (en, tr)
 src/content/      Scripts injected into X
 src/popup/        Records, settings and backup UI
 docs/             User guide and release process (Turkish), README media
@@ -95,14 +102,15 @@ No build step, no dependencies. [Changelog](CHANGELOG.md) · [Guide](docs/KURULU
 
 ## Checks
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every pull request and, through [`release.yml`](.github/workflows/release.yml), on every push to `main`. It needs Node.js and runs two checks; run the same ones locally from the repository root:
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every pull request and, through [`release.yml`](.github/workflows/release.yml), on every push to `main`. It needs Node.js and runs three checks; run the same ones locally from the repository root:
 
 ```
 find src -name '*.js' -print0 | xargs -0 -n1 node --check   # JS syntax
 node .github/ci/check-manifest.js                      # manifest references and locale JSON
+node --test tests/*.test.mjs                           # URL helpers, i18n parity, markup checks
 ```
 
-There are no unit or end-to-end tests in CI.
+There are no browser end-to-end tests in CI.
 
 **Releases:** a version bump on `main` is sent to the Chrome Web Store only after it is approved in GitHub Actions. See [docs/YAYINLAMA.md](docs/YAYINLAMA.md) (Turkish).
 

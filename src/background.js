@@ -103,6 +103,23 @@ async function run(message, trustedUI) {
     await chrome.storage.local.set({ [KEY]: rows });
     return { record };
   }
+  if (message.type === 'bulkAdd') {
+    const input = Array.isArray(message.records) ? message.records : [];
+    if (!input.length || input.length > 5000) throw Error('errInvalidRecord');
+    const rows = await records();
+    const active = new Set(rows.filter(row => !row.endedAt && typeof row.handle === 'string' && ['block', 'mute'].includes(row.action)).map(row => row.handle.toLowerCase() + '\0' + (row.owner || '').toLowerCase() + '\0' + row.action));
+    const batch = [], now = new Date().toISOString();
+    for (const item of input) {
+      let record;
+      try { record = normalizeRecord(item, 'observed'); } catch { continue; }
+      record.createdAt = now; record.note = ''; record.tweetText = '';
+      const key = record.handle.toLowerCase() + '\0' + (record.owner || '').toLowerCase() + '\0' + record.action;
+      if (active.has(key)) continue;
+      active.add(key); batch.push(record);
+    }
+    if (batch.length) await chrome.storage.local.set({ [KEY]: [...batch, ...rows] });
+    return { added: batch.length, skipped: input.length - batch.length };
+  }
   if (message.type === 'note') {
     const rows = await records();
     const record = rows.find(row => row.id === message.id);

@@ -38,6 +38,15 @@ Paketlenmemiş eklentinin kimliği klasör yoluna bağlıdır. **Aynı klasörü
 - **Tweetin tamamını göster / Daralt** kayıtlı metni aynı alanda açar ve kapatır. “Asıl tweeti aç” bağlantısı X’e gider.
 - Neden yazarken X’in harf kısayolları engellenir. Metin seçme, kopyalama/yapıştırma ve Türkçe karakterler desteklenir. Alanın dışına çıkınca X kısayolları yeniden çalışır.
 
+### Bir gönderiyi beğenenleri topluca engelle
+
+- Popup ana sayfasında **Toplu engelle** → gönderi bağlantısını yapıştır → **Beğenenler sayfasını aç**. Bağlantı X’te `/kullanici/status/<id>/likes` sayfası olarak açılır.
+- Beğenenler sayfasında **Beğenenleri engelle** paneline bas. Panel, beğenen listesinin tamamını X’in kendi oturumundaki isteklerle (yalnız bellekte) yükler ve **kesin sayıyı** gösterir. “Bu gönderiyi beğenen N kişi engellensin mi?” onayından sonra **Başlat**.
+- Engellemeler X’in kendi block isteğiyle **paralel** yürür; 1000 kişilik liste tek tek arayüz tıklaması beklemez. Hızlı yol kullanılamazsa yalnız onaylanan yüklü küme için tek tek arayüz akışına düşer. **Durdur** yeni istekleri keser; o anda uçuşta olan birkaç istek tamamlanabilir.
+- Kendi hesabın ve zaten “engeli kaldır” denetimi gösterenler atlanır. X üst üste hata verirse veya sayfa/hesap değişirse akış durur; hız sınırına takılırsa kalanlar durdurulur.
+- Engellenen her hesap için geçmişe normal bir yerel kayıt düşer: kullanıcı adı, X döndürdüyse görünen ad, engelleme işlemi, gönderi bağlantısı ve boş neden. Neden uydurulmaz; kayıt sonradan düzenlenebilir. Beğenen listesi veya istek bilgisi saklanmaz; yetkilendirme başlıkları yalnız çalışma sırasında bellekte tutulur.
+- Sınırlama: X’in hız sınırları veya arayüz değişiklikleri akışı duraklatabilir. X’teki engeller toplu geri alınamaz.
+
 ## Neden düzenleme ve taslaklar
 
 - Profilde veya profil önizlemesinde kalem simgesine ya da **Neden ekle**’ye bas; neden ve ilgili tweet bağlantısı aynı yerde düzenlenir.

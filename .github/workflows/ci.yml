@@ -30,3 +30,6 @@ jobs:
 
       - name: Manifest and locale files
         run: node .github/ci/check-manifest.js
+
+      - name: Unit and static checks
+        run: node --test tests/*.test.mjs

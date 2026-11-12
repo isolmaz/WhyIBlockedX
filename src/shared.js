@@ -12,10 +12,19 @@ globalThis.WIBX = {
     try {
       const url = new URL(value);
       if (url.protocol !== 'https:' || !['x.com','twitter.com','www.x.com','www.twitter.com'].includes(url.hostname)) return '';
-      const match = url.pathname.match(/^\/(?:([A-Za-z0-9_]{1,15})\/status|(i\/web\/status))\/(\d+)(?:\/(?:photo|video)\/\d+)?\/?$/);
+      const match = url.pathname.match(/^\/(?:([A-Za-z0-9_]{1,15})\/status|(i\/web\/status))\/(\d{1,30})(?:\/(?:photo|video)\/\d+)?\/?$/);
       return match ? 'https://x.com/' + (match[1] ? match[1]+'/status' : match[2]) + '/' + match[3] : '';
     } catch { return ''; }
   },
+  likesURL(value) {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== 'https:' || !['x.com','twitter.com','www.x.com','www.twitter.com'].includes(url.hostname)) return '';
+      const match = url.pathname.match(/^\/(?:(i\/web\/status|i\/status)|([A-Za-z0-9_]{1,15})\/status)\/(\d{1,30})(?:\/(?:photo|video)\/\d+)?(?:\/likes)?\/?$/);
+      return match ? 'https://x.com/' + (match[1] ? 'i/web/status' : match[2]+'/status') + '/' + match[3] + '/likes' : '';
+    } catch { return ''; }
+  },
+  isLikesPath(pathname) { return typeof pathname === 'string' && /^\/(?:[A-Za-z0-9_]{1,15}\/status|i(?:\/web)?\/status)\/\d+\/likes\/?$/.test(pathname); },
   draftKey(record, context, action) { return record?.id ? 'record:'+record.id : 'new:'+(context.owner||'').toLowerCase()+':'+context.handle.toLowerCase()+':'+action; },
   pencil() {
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','18');svg.setAttribute('height','18');svg.setAttribute('aria-hidden','true');
