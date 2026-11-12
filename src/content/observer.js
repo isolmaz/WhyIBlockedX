@@ -1,4 +1,4 @@
-/* Observe block/mute responses and pass X's own block/likes request templates to the extension's memory. Nothing is saved to storage. */
+/* Observe block/mute responses and pass X's own block and liker/reposter list request templates to the extension's memory. Nothing is saved to storage. */
 (() => {
   // Runs before X installs shortcuts. Keep the browser's native typing/paste defaults.
   const consumed = new Set();
@@ -27,11 +27,11 @@
   function emit(data) { window.postMessage({ channel: CHANNEL, ...data }, location.origin); }
   // Request templates are kept in memory only so the isolated world can replay
   // X's own GraphQL calls for a fast bulk block. Nothing here is stored.
-  const LIKES = /\/graphql\/[^/]+\/(?:Favoriters|Likes)$/;
-  function likesEndpoint(value, method) {
+  const LISTS = /\/graphql\/[^/]+\/(?:Favoriters|Retweeters)$/;
+  function listEndpoint(value, method) {
     try {
       const url = new URL(value, location.href);
-      return /(^|\.)(x\.com|twitter\.com)$/.test(url.hostname) && /^(GET|POST)$/.test(method?.toUpperCase() || '') && LIKES.test(url.pathname);
+      return /(^|\.)(x\.com|twitter\.com)$/.test(url.hostname) && /^(GET|POST)$/.test(method?.toUpperCase() || '') && LISTS.test(url.pathname);
     } catch {}
     return false;
   }
@@ -78,8 +78,8 @@
   window.fetch = function (input, init) {
     const target = requestTarget(input, init);
     const action = endpoint(target.url, target.method);
-    const likes = !action && likesEndpoint(target.url, target.method);
-    if (!action && !likes) return Reflect.apply(originalFetch, this, arguments);
+    const list = !action && listEndpoint(target.url, target.method);
+    if (!action && !list) return Reflect.apply(originalFetch, this, arguments);
     const info = requestInfo(input, init, target);
     const id = action ? crypto.randomUUID() : '';
     if (action && (action === 'block' || action === 'mute')) emit({ phase: 'template', kind: action, request: info });
@@ -91,22 +91,37 @@
         response.clone().json().then(body => finish(id, response.status, body), () => finish(id, 0, null));
       }, () => finish(id, 0, null)).catch(() => {});
     }
-    if (likes) {
+    if (list) {
       result.then(response => {
-        if (response.ok) emit({ phase: 'template', kind: 'likes', request: info });
+        if (response.ok) emit({ phase: 'template', kind: 'list', request: info });
       }, () => {}).catch(() => {});
     }
     return result;
   };
+  // X's own API client uses XMLHttpRequest for lists and blocks/create, so templates are copied here too.
   const requests = new WeakMap();
   const originalOpen = XMLHttpRequest.prototype.open;
+  const originalSetHeader = XMLHttpRequest.prototype.setRequestHeader;
   const originalSend = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.open = function (method, url) {
-    requests.set(this, endpoint(url, method));
+    try {
+      const target = { url: new URL(String(url), location.href).href, method: String(method).toUpperCase() };
+      const action = endpoint(target.url, target.method);
+      requests.set(this, { target, action, list: !action && listEndpoint(target.url, target.method), headers: {} });
+    } catch { requests.delete(this); }
     return Reflect.apply(originalOpen, this, arguments);
   };
-  XMLHttpRequest.prototype.send = function () {
-    const action = requests.get(this);
+  XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+    const request = requests.get(this);
+    if (request) request.headers[name] = String(value);
+    return Reflect.apply(originalSetHeader, this, arguments);
+  };
+  XMLHttpRequest.prototype.send = function (body) {
+    const request = requests.get(this);
+    const action = request?.action;
+    const info = request && (action || request.list) ? { ...request.target, headers: { ...request.headers }, body: typeof body === 'string' ? body : body instanceof URLSearchParams ? body.toString() : null } : null;
+    if (action === 'block' || action === 'mute') emit({ phase: 'template', kind: action, request: info });
+    if (request?.list) this.addEventListener('loadend', () => { if (this.status >= 200 && this.status < 300) emit({ phase: 'template', kind: 'list', request: info }); }, { once: true });
     if (action) {
       const id = crypto.randomUUID();
       emit({ phase: 'start', id, action });

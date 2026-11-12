@@ -1,5 +1,16 @@
 # Değişiklik günlüğü
 
+## 0.7.0 — 12 Kasım 2026
+
+### Yeni
+- **Gönderinin ⋯ menüsünde kırmızı Toplu engelle.** Her gönderide **Toplu engelle: repost edenler**, kendi gönderilerinde ayrıca **Toplu engelle: beğenenler** çıkar. X beğenenleri yalnız gönderinin sahibine gösterdiği için başkasının gönderisinde beğenenler engellenemez.
+- Toplu engelleme repost edenler sayfasında da çalışır; popup’taki **Toplu engelle** artık repost edenler sayfasını açar.
+- Menülerde X’in kendi **Engelle** seçeneği kırmızı görünür.
+
+### Düzeltme
+- Tam liste ve hızlı engelleme gerçek X’te çalışır: X liste ve engelleme isteklerini XMLHttpRequest ile, engellemeyi REST `blocks/create` ile gönderir; eklenti artık bu istekleri de tanır. Önceden yalnız sayfada görünen hesaplar onaylanıyor ve hızlı yol hiç devreye girmiyordu.
+- X hızlı engelleme isteklerinin hepsini reddederse akış bitmez; onaylanan ve sayfada görünen hesaplar tek tek engellenir. Hız sınırında (429) akış durur.
+
 ## 0.6.0 — 12 Kasım 2026
 
 ### Yeni

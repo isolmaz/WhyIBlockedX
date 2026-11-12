@@ -3,7 +3,7 @@
   const inflight = new Map();
   WIBX.actionListeners = new Set();
   // In-memory copies of X's own GraphQL requests, used only by the bulk block
-  // runner so 1000 likers do not have to be clicked one by one. Never stored.
+  // runner so long liker/reposter lists do not have to be clicked one by one. Never stored.
   WIBX.templates = {};
   WIBX.captureIntent = record => { intent = { ...record, at: Date.now(), requestKey: crypto.randomUUID() }; return intent.requestKey; };
   WIBX.clearIntent = key => { if (!key || intent?.requestKey === key) intent = null; };
@@ -50,7 +50,7 @@
     if (event.source !== window || event.origin !== location.origin || data?.channel !== 'neden.network.v1') return;
     if (data.phase === 'template') {
       const request = data.request;
-      if (!request || typeof request.url !== 'string' || !/^https:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/api\/graphql\//.test(request.url) || !/^(GET|POST)$/.test(request.method || '')) return;
+      if (!request || typeof request.url !== 'string' || !/^https:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/api\/(?:graphql\/|1\.1\/blocks\/create\.json(?:$|\?))/.test(request.url) || !/^(GET|POST)$/.test(request.method || '')) return;
       const allowed = name => {
         const key = name.toLowerCase();
         return key === 'authorization' || key === 'x-csrf-token' || key === 'content-type' || key === 'accept' || key.startsWith('x-twitter-') || key.startsWith('x-client-');
@@ -59,7 +59,9 @@
       for (const [name, value] of Object.entries(request.headers || {})) if (allowed(name) && typeof value === 'string') headers[name] = value;
       const template = { url: request.url, method: request.method, headers, body: typeof request.body === 'string' && request.body.length <= 200000 ? request.body : null };
       if (data.kind === 'block') WIBX.templates.block = template;
-      if (data.kind === 'likes') WIBX.templates.likes = template;
+      const op = new URL(request.url).pathname.split('/').pop();
+      const list = op === 'Retweeters' ? 'retweets' : op === 'Favoriters' ? 'likes' : '';
+      if (data.kind === 'list' && list) WIBX.templates.list = { ...template, list };
       return;
     }
     if (typeof data.id !== 'string' || data.id.length > 80) return;

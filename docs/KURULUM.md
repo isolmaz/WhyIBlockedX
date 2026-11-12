@@ -34,13 +34,14 @@ Paketlenmemiş eklentinin kimliği klasör yoluna bağlıdır. **Aynı klasörü
 - **Tweetin tamamını göster / Daralt** kayıtlı metni aynı alanda açar ve kapatır. “Asıl tweeti aç” bağlantısı X’e gider.
 - Neden yazarken X’in harf kısayolları engellenir. Metin seçme, kopyalama/yapıştırma ve Türkçe karakterler desteklenir. Alanın dışına çıkınca X kısayolları yeniden çalışır.
 
-### Bir gönderiyi beğenenleri topluca engelle
+### Bir gönderiyi repost edenleri (ve kendi gönderinde beğenenleri) topluca engelle
 
-- Popup ana sayfasında **Toplu engelle** → gönderi bağlantısını yapıştır → **Beğenenler sayfasını aç**. Bağlantı X’te `/kullanici/status/<id>/likes` sayfası olarak açılır.
-- Beğenenler sayfasında **Beğenenleri engelle** paneline bas. Panel, beğenen listesinin tamamını X’in kendi oturumundaki isteklerle (yalnız bellekte) yükler ve **kesin sayıyı** gösterir. “Bu gönderiyi beğenen N kişi engellensin mi?” onayından sonra **Başlat**.
+- Gönderinin **⋯** menüsünde kırmızı **Toplu engelle: repost edenler**’e bas. Kendi gönderinde menüde **Toplu engelle: beğenenler** de çıkar. X, bir gönderiyi kimin beğendiğini yalnız gönderinin sahibine gösterir; başkasının gönderisinde beğenenler listelenemez. Aynı menülerde X’in kendi **Engelle** seçeneği de kırmızı görünür.
+- Popup’tan da açılabilir: **Toplu engelle** → gönderi bağlantısını yapıştır → **Repost edenler sayfasını aç**. Bağlantı X’te `/kullanici/status/<id>/retweets` sayfası olarak açılır.
+- Açılan sayfadaki panelde **Tümünü engelle**’ye bas. Panel listenin tamamını X’in kendi oturumundaki isteklerle (yalnız bellekte) yükler ve **kesin sayıyı** gösterir. “Bu gönderiyi repost eden N kişi engellensin mi?” onayından sonra **Başlat**.
 - Engellemeler X’in kendi block isteğiyle **paralel** yürür; 1000 kişilik liste tek tek arayüz tıklaması beklemez. Liste tamamen yüklenemezse panel yalnız sayfada görünen hesapları gösterir ve onaylatır. Hızlı yol kullanılamazsa tek tek arayüz akışına düşer ve yalnız onaylanan kümede olup sayfada görünen hesapları engeller. **Durdur** yeni istekleri keser; o anda uçuşta olan birkaç istek tamamlanabilir.
 - Kendi hesabın her zaman atlanır. Tek tek arayüz akışı zaten “engeli kaldır” denetimi gösterenleri de atlar; hızlı yol zaten engellediğin bir hesaba yeniden engelleme isteği gönderebilir, ama yinelenen kayıt açılmaz. X üst üste hata verirse veya sayfa/hesap değişirse akış durur; hız sınırına takılırsa kalanlar durdurulur.
-- Engellenen her hesap için geçmişe normal bir yerel kayıt düşer: kullanıcı adı, X döndürdüyse görünen ad, engelleme işlemi, gönderi bağlantısı ve boş neden. Neden uydurulmaz; kayıt sonradan düzenlenebilir. Beğenen listesi veya istek bilgisi saklanmaz; yetkilendirme başlıkları yalnız bellekte, başka sayfaya geçene kadar tutulur.
+- Engellenen her hesap için geçmişe normal bir yerel kayıt düşer: kullanıcı adı, X döndürdüyse görünen ad, engelleme işlemi, gönderi bağlantısı ve boş neden. Neden uydurulmaz; kayıt sonradan düzenlenebilir. Repost eden/beğenen listesi veya istek bilgisi saklanmaz; yetkilendirme başlıkları yalnız bellekte, başka sayfaya geçene kadar tutulur.
 - Sınırlama: X’in hız sınırları veya arayüz değişiklikleri akışı duraklatabilir. X’teki engeller toplu geri alınamaz.
 
 ## Neden düzenleme ve taslaklar

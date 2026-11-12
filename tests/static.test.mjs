@@ -54,6 +54,6 @@ test('bulk UI strings exist in both languages', () => {
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(read('src/i18n.js'), sandbox, { filename: 'src/i18n.js' });
-  const keys = ['bulkTitle', 'bulkFound', 'bulkLoading', 'bulkHint', 'bulkStart', 'bulkConfirm', 'bulkConfirmAction', 'bulkStop', 'bulkStopped', 'bulkDone', 'bulkProgress', 'bulkWorking', 'bulkNoUsers', 'bulkPaused', 'bulkPageChanged', 'bulkLogin', 'bulkNoMenu', 'bulkNav', 'bulkPageTitle', 'bulkPageHint', 'bulkUrl', 'bulkLaunch', 'bulkFetching', 'bulkFastBlocking', 'bulkFastFailed', 'bulkFastFallback'];
+  const keys = ['bulkTitle', 'bulkFound', 'bulkLoading', 'bulkHint', 'bulkStart', 'bulkConfirm', 'bulkConfirmAction', 'bulkStop', 'bulkStopped', 'bulkDone', 'bulkProgress', 'bulkWorking', 'bulkNoUsers', 'bulkPaused', 'bulkPageChanged', 'bulkLogin', 'bulkNoMenu', 'bulkNav', 'bulkPageTitle', 'bulkPageHint', 'bulkUrl', 'bulkLaunch', 'bulkFetching', 'bulkFastBlocking', 'bulkFastFailed', 'bulkFastFallback', 'bulkMenuReposts', 'bulkMenuLikes', 'bulkTitleReposts', 'bulkFoundReposts', 'bulkLoadingReposts', 'bulkFetchingReposts', 'bulkNoUsersReposts', 'bulkHintReposts', 'bulkConfirmReposts'];
   for (const lang of ['en', 'tr']) for (const key of keys) assert.ok(Object.hasOwn(sandbox.WIBX.i18n[lang], key), `${lang} missing ${key}`);
 });
