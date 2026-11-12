@@ -37,7 +37,7 @@ function likesBody(handles) {
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
 // Loads bulk.js against a minimal fake X likes page and returns handles to drive it.
-function harness({ path = '/alice/status/123/likes', visible = [], likes, runAction }) {
+function harness({ path = '/alice/status/123/likes', visible = [], likes, runAction, saveSkipped = 0 }) {
   const created = [], windowListeners = {}, blockCalls = [], uiAttempts = [], sent = [];
   const column = { querySelectorAll: () => page.visible.map(handle => ({ handle, isConnected: true, closest: () => null, querySelectorAll: () => [], querySelector: () => ({}) })) };
   const body = new FakeElement('body');
@@ -73,7 +73,7 @@ function harness({ path = '/alice/status/123/likes', visible = [], likes, runAct
     style: () => '',
     sitePalette: () => ({}),
     templates: {},
-    send: async (message) => { sent.push(message); return { ok: true, added: message.records.length, skipped: 0 }; },
+    send: async (message) => { sent.push(message); return { ok: true, added: message.records.length - saveSkipped, skipped: saveSkipped }; },
     runAction: async ({ context }) => { uiAttempts.push(context.handle); if (runAction) await runAction(context); },
   });
   vm.runInContext(read('src/content/bulk.js'), sandbox, { filename: 'src/content/bulk.js' });
@@ -84,6 +84,7 @@ function harness({ path = '/alice/status/123/likes', visible = [], likes, runAct
     sandbox, page, host, blockCalls, uiAttempts,
     primary: buttons[0],
     countLine: paragraphs[0],
+    progress: paragraphs[1],
     status: paragraphs[2],
     navigate(next) { sandbox.location.pathname = next; for (const fn of windowListeners.popstate || []) fn(); },
   };
@@ -158,6 +159,31 @@ test('UI warm-up blocks only confirmed likers and pauses after three failures', 
   assert.deepEqual(plain(h.uiAttempts), ['u1', 'u2', 'u3']);
   assert.equal(h.status.textContent, 'bulkPaused');
   assert.deepEqual(h.blockCalls, []);
+});
+
+test('confirming after the URL changed but before the panel reset blocks nobody', async () => {
+  const h = harness({ likes: async () => json(200, likesBody(['a1', 'a2'])) });
+  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  h.sandbox.WIBX.templates.block = blockTemplate;
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  h.sandbox.location.pathname = '/bob/status/456/likes';
+  h.primary.click();
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.deepEqual(h.blockCalls, []);
+  assert.notEqual(h.host.dataset.state, 'running');
+});
+
+test('fast path counts accounts with an existing record as blocked', async () => {
+  const h = harness({ likes: async () => json(200, likesBody(['a1', 'a2', 'a3'])), saveSkipped: 1 });
+  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  h.sandbox.WIBX.templates.block = blockTemplate;
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'finished', 'finished');
+  assert.equal(h.blockCalls.length, 3);
+  assert.equal(h.progress.textContent, 'bulkDone:3,0,0');
 });
 
 test('observer copies request headers from plain objects, Headers and pairs', async () => {

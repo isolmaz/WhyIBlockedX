@@ -1,9 +1,7 @@
 name: Release
 
 # Every push to main runs CI. When manifest.json has a version without a GitHub
-# release, the publish job waits for approval in the chrome-web-store environment;
-# once approved, the ZIP is uploaded to the Chrome Web Store and submitted for
-# review (it goes live once review passes), then released here as v<version>.
+# release, the ZIP is built and published as GitHub release v<version>.
 # See docs/YAYINLAMA.md.
 on:
   push:
@@ -47,11 +45,9 @@ jobs:
     needs: version
     if: needs.version.outputs.new == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: chrome-web-store
-    # One submission at a time; a run waiting for approval doesn't hold up CI.
+    timeout-minutes: 10
     concurrency:
-      group: chrome-web-store
+      group: release
       cancel-in-progress: false
     permissions:
       contents: write
@@ -62,10 +58,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Release notes
         run: |
           awk -v v="$VERSION" '/^## /{p = index($0, "## " v " ") == 1; next} p' CHANGELOG.md > notes.md
@@ -75,13 +67,6 @@ jobs:
         run: |
           mkdir dist
           zip -r -X "dist/WhyIBlockedX-v$VERSION.zip" manifest.json _locales icons src -x '*.DS_Store'
-
-      - name: Chrome Web Store
-        env:
-          CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
-          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-          CWS_EXTENSION_ID: enmdpnmbnmmlnfchlbolggldjnmbappb
-        run: node .github/ci/publish-cws.mjs "dist/WhyIBlockedX-v$VERSION.zip" "$VERSION"
 
       - name: GitHub release
         env:
