@@ -25,24 +25,27 @@ test('tweetURL rejects unsafe or malformed links', () => {
   }
 });
 
-test('likesURL canonicalizes post and likes links', () => {
-  assert.equal(W.likesURL('https://x.com/alice/status/123'), 'https://x.com/alice/status/123/likes');
-  assert.equal(W.likesURL('https://twitter.com/alice/status/123?s=20'), 'https://x.com/alice/status/123/likes');
-  assert.equal(W.likesURL('https://x.com/alice/status/123/likes'), 'https://x.com/alice/status/123/likes');
-  assert.equal(W.likesURL('https://x.com/i/web/status/123'), 'https://x.com/i/web/status/123/likes');
-  assert.equal(W.likesURL('https://x.com/i/status/123/likes'), 'https://x.com/i/web/status/123/likes');
+test('listURL canonicalizes post, likes and reposts links', () => {
+  assert.equal(W.listURL('https://x.com/alice/status/123', 'retweets'), 'https://x.com/alice/status/123/retweets');
+  assert.equal(W.listURL('https://twitter.com/alice/status/123?s=20', 'likes'), 'https://x.com/alice/status/123/likes');
+  assert.equal(W.listURL('https://x.com/alice/status/123/likes', 'retweets'), 'https://x.com/alice/status/123/retweets');
+  assert.equal(W.listURL('https://x.com/alice/status/123/retweets', 'likes'), 'https://x.com/alice/status/123/likes');
+  assert.equal(W.listURL('https://x.com/i/web/status/123', 'retweets'), 'https://x.com/i/web/status/123/retweets');
+  assert.equal(W.listURL('https://x.com/i/status/123/likes', 'likes'), 'https://x.com/i/web/status/123/likes');
   for (const value of ['https://x.com/alice', 'https://x.com/alice/status/abc/likes', 'http://x.com/alice/status/123', 'javascript:alert(1)']) {
-    assert.equal(W.likesURL(value), '', String(value));
+    assert.equal(W.listURL(value, 'retweets'), '', String(value));
   }
+  assert.equal(W.listURL('https://x.com/alice/status/123', 'quotes'), '');
 });
 
-test('isLikesPath only accepts likes routes', () => {
-  assert.equal(W.isLikesPath('/alice/status/123/likes'), true);
-  assert.equal(W.isLikesPath('/alice/status/123/likes/'), true);
-  assert.equal(W.isLikesPath('/i/web/status/123/likes'), true);
-  assert.equal(W.isLikesPath('/i/status/123/likes'), true);
-  for (const value of ['/alice/status/123', '/alice/likes', '/i/web/status/123', '/home', '']) {
-    assert.equal(W.isLikesPath(value), false, value);
+test('listKind only accepts likes and reposts routes', () => {
+  assert.equal(W.listKind('/alice/status/123/likes'), 'likes');
+  assert.equal(W.listKind('/alice/status/123/likes/'), 'likes');
+  assert.equal(W.listKind('/alice/status/123/retweets'), 'retweets');
+  assert.equal(W.listKind('/i/web/status/123/retweets'), 'retweets');
+  assert.equal(W.listKind('/i/status/123/likes'), 'likes');
+  for (const value of ['/alice/status/123', '/alice/likes', '/alice/status/123/quotes', '/i/web/status/123', '/home', '']) {
+    assert.equal(W.listKind(value), '', value);
   }
 });
 

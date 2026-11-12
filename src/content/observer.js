@@ -1,4 +1,4 @@
-/* Observe block/mute responses and pass X's own block/likes request templates to the extension's memory. Nothing is saved to storage. */
+/* Observe block/mute responses and pass X's own block and liker/reposter list request templates to the extension's memory. Nothing is saved to storage. */
 (() => {
   // Runs before X installs shortcuts. Keep the browser's native typing/paste defaults.
   const consumed = new Set();
@@ -27,11 +27,11 @@
   function emit(data) { window.postMessage({ channel: CHANNEL, ...data }, location.origin); }
   // Request templates are kept in memory only so the isolated world can replay
   // X's own GraphQL calls for a fast bulk block. Nothing here is stored.
-  const LIKES = /\/graphql\/[^/]+\/(?:Favoriters|Likes)$/;
-  function likesEndpoint(value, method) {
+  const LISTS = /\/graphql\/[^/]+\/(?:Favoriters|Retweeters)$/;
+  function listEndpoint(value, method) {
     try {
       const url = new URL(value, location.href);
-      return /(^|\.)(x\.com|twitter\.com)$/.test(url.hostname) && /^(GET|POST)$/.test(method?.toUpperCase() || '') && LIKES.test(url.pathname);
+      return /(^|\.)(x\.com|twitter\.com)$/.test(url.hostname) && /^(GET|POST)$/.test(method?.toUpperCase() || '') && LISTS.test(url.pathname);
     } catch {}
     return false;
   }
@@ -78,8 +78,8 @@
   window.fetch = function (input, init) {
     const target = requestTarget(input, init);
     const action = endpoint(target.url, target.method);
-    const likes = !action && likesEndpoint(target.url, target.method);
-    if (!action && !likes) return Reflect.apply(originalFetch, this, arguments);
+    const list = !action && listEndpoint(target.url, target.method);
+    if (!action && !list) return Reflect.apply(originalFetch, this, arguments);
     const info = requestInfo(input, init, target);
     const id = action ? crypto.randomUUID() : '';
     if (action && (action === 'block' || action === 'mute')) emit({ phase: 'template', kind: action, request: info });
@@ -91,9 +91,9 @@
         response.clone().json().then(body => finish(id, response.status, body), () => finish(id, 0, null));
       }, () => finish(id, 0, null)).catch(() => {});
     }
-    if (likes) {
+    if (list) {
       result.then(response => {
-        if (response.ok) emit({ phase: 'template', kind: 'likes', request: info });
+        if (response.ok) emit({ phase: 'template', kind: 'list', request: info });
       }, () => {}).catch(() => {});
     }
     return result;

@@ -1,10 +1,12 @@
-/* Blocks every liker of the current post. Only runs on an X likes timeline. */
+/* Blocks everyone on a post's likes or reposts list, and adds Bulk block to post menus. */
 (() => {
   const PANEL_ID = 'wibx-bulk-panel', MAX_HANDLES = 5000;
   const FAST_CONCURRENCY = 24, FAST_PAGE = 100, FAST_PAGES = 60;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const jitter = () => 1200 + Math.floor(Math.random() * 601);
   const t = (key, ...values) => WIBX.t(key, ...values);
+  // Reposts pages use their own wording; likes pages keep the base keys.
+  const tk = (key, ...values) => t(WIBX.listKind(location.pathname) === 'retweets' ? key + 'Reposts' : key, ...values);
   let host = null, root = null, els = null, observer = null, mutationTimer = 0, pathTimer = 0;
   let state = 'idle', note = '', running = false, stopRequested = false, runToken = 0, loadToken = 0, pendingReset = false;
   let counts = { blocked: 0, skipped: 0, failed: 0 }, current = '', failures = 0, processed = new Set();
@@ -27,7 +29,7 @@
   function node(tag, cls) { const el = document.createElement(tag); if (cls) el.className = cls; return el; }
   function button(cls) { const el = node('button', cls); el.type = 'button'; return el; }
   function postURL() {
-    const match = location.pathname.match(/^\/(?:([A-Za-z0-9_]{1,15})\/status|i\/(?:web\/)?status)\/(\d+)\/likes\/?$/);
+    const match = location.pathname.match(/^\/(?:([A-Za-z0-9_]{1,15})\/status|i\/(?:web\/)?status)\/(\d+)\/(?:likes|retweets)\/?$/);
     return match ? 'https://x.com/' + (match[1] ? match[1] + '/status' : 'i/web/status') + '/' + match[2] : '';
   }
   function cells() {
@@ -92,23 +94,23 @@
     if (!els || !host) return;
     host.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483646;max-width:calc(100vw - 32px);' + (paletteCss || WIBX.style(WIBX.sitePalette()));
     host.dataset.state = state;
-    els.region.setAttribute('aria-label', t('bulkTitle'));
-    els.title.textContent = t('bulkTitle');
+    els.region.setAttribute('aria-label', tk('bulkTitle'));
+    els.title.textContent = tk('bulkTitle');
     els.progress.hidden = true; els.countLine.hidden = false;
     els.primary.hidden = false; els.primary.disabled = false;
     els.secondary.hidden = true; els.secondary.disabled = false;
     if (state === 'idle') {
-      els.countLine.textContent = count ? t('bulkFound', count) : t('bulkNoUsers');
-      els.status.textContent = WIBX.owner() ? t('bulkHint') : t('bulkLogin');
+      els.countLine.textContent = count ? tk('bulkFound', count) : tk('bulkNoUsers');
+      els.status.textContent = WIBX.owner() ? tk('bulkHint') : t('bulkLogin');
       els.primary.textContent = t('bulkStart');
       els.primary.disabled = !count || !WIBX.owner();
     } else if (state === 'loading') {
       els.countLine.hidden = true; els.progress.hidden = true;
-      els.status.textContent = note || t('bulkLoading');
+      els.status.textContent = note || tk('bulkLoading');
       els.primary.hidden = true; els.secondary.hidden = false; els.secondary.textContent = t('cancel');
     } else if (state === 'confirm') {
-      els.countLine.textContent = t('bulkFound', count);
-      els.status.textContent = t('bulkConfirm', count);
+      els.countLine.textContent = tk('bulkFound', count);
+      els.status.textContent = tk('bulkConfirm', count);
       els.primary.textContent = t('bulkConfirmAction');
       els.secondary.hidden = false; els.secondary.textContent = t('cancel');
     } else if (state === 'running') {
@@ -130,12 +132,13 @@
       if (!WIBX.owner()) { state = 'idle'; sync(); return; }
       stopRequested = false; count = collect().size;
       fastUsers = null; approved = new Set();
-      if (WIBX.templates?.likes) {
+      const template = WIBX.templates?.list;
+      if (template && template.list === WIBX.listKind(location.pathname)) {
         const token = ++loadToken, route = location.pathname;
         const isCurrent = () => token === loadToken && location.pathname === route && state === 'loading';
-        state = 'loading'; note = t('bulkLoading'); sync();
+        state = 'loading'; note = tk('bulkLoading'); sync();
         try {
-          const users = await allLikers(WIBX.templates.likes, isCurrent);
+          const users = await allUsers(template, isCurrent);
           if (!isCurrent()) return;
           if (users?.length) { fastUsers = users; count = users.length; }
           else count = collect().size;
@@ -157,7 +160,7 @@
   }
 
   function postId() {
-    const match = location.pathname.match(/\/status\/(\d+)\/likes\/?$/);
+    const match = location.pathname.match(/\/status\/(\d+)\/(?:likes|retweets)\/?$/);
     return match ? match[1] : '';
   }
   function templateVariables(template) {
@@ -181,7 +184,7 @@
     return { url: template.url, init: { method: 'POST', headers: template.headers, body: JSON.stringify(body), credentials: 'include' } };
   }
   function timelineRoot(body) {
-    const names = ['favoriters_timeline', 'likes_timeline'], queue = [body];
+    const names = ['favoriters_timeline', 'retweeters_timeline', 'likes_timeline'], queue = [body];
     while (queue.length) {
       const node = queue.shift();
       if (!node || typeof node !== 'object') continue;
@@ -217,26 +220,26 @@
     })(root, 0);
     return found;
   }
-  async function likesPage(template, variables, cursor) {
+  async function listPage(template, variables, cursor) {
     const request = templateRequest(template, { ...variables, count: FAST_PAGE, cursor });
     if (typeof AbortSignal.timeout === 'function') request.init.signal = AbortSignal.timeout(20000);
     const response = await fetch(request.url, request.init);
-    if (!response.ok) throw Error('likes-' + response.status);
+    if (!response.ok) throw Error('list-' + response.status);
     const body = await response.json();
     return { users: usersIn(body), cursor: cursorIn(body) };
   }
-  async function allLikers(template, isCurrent) {
+  async function allUsers(template, isCurrent) {
     const variables = templateVariables(template);
     if (!variables || String(variables.tweetId || variables.tweet_id || '') !== postId()) return null;
     const users = new Map();
     let cursor = null, pages = 0;
     while (users.size < MAX_HANDLES && pages < FAST_PAGES) {
       if (!isCurrent()) return null;
-      const page = await likesPage(template, variables, cursor);
+      const page = await listPage(template, variables, cursor);
       if (!isCurrent()) return null;
       for (const user of page.users) if (!users.has(user.handle.toLowerCase())) users.set(user.handle.toLowerCase(), user);
       count = users.size;
-      note = t('bulkFetching', count); sync();
+      note = tk('bulkFetching', count); sync();
       if (!page.cursor || page.cursor === cursor) break;
       cursor = page.cursor; pages++;
     }
@@ -256,7 +259,7 @@
     if (payload && (payload.error || (Array.isArray(payload.errors) && payload.errors.length))) throw Error('block-api');
     return true;
   }
-  // Blocks one confirmed, visible liker through the UI so X sends a BlockUser request to copy.
+  // Blocks one confirmed, visible account through the UI so X sends a BlockUser request to copy.
   async function uiBlockOne(token, route, account) {
     for (const [key, entry] of collect()) {
       if (token !== runToken || stopRequested) return 'stop';
@@ -272,7 +275,7 @@
     return 'none';
   }
   async function runFast(token, route, account) {
-    if (!WIBX.templates?.likes || !WIBX.isLikesPath(location.pathname)) return false;
+    if (!WIBX.listKind(location.pathname)) return false;
     const users = fastUsers;
     if (!users?.length) return false;
     if (token !== runToken || stopRequested || location.pathname !== route || WIBX.owner() !== account) return true;
@@ -372,7 +375,7 @@
     note = ''; sync();
     while (true) {
       if (token !== runToken || stopRequested) break;
-      if (!WIBX.isLikesPath(location.pathname) || location.pathname !== route || WIBX.owner() !== account) { note = t('bulkPageChanged'); break; }
+      if (!WIBX.listKind(location.pathname) || location.pathname !== route || WIBX.owner() !== account) { note = t('bulkPageChanged'); break; }
       if (processed.size >= MAX_HANDLES) break;
       const found = collect();
       let item = null;
@@ -412,8 +415,8 @@
   }
 
   function checkPath() {
-    if (typeof WIBX.isLikesPath !== 'function') return;
-    if (!WIBX.isLikesPath(location.pathname)) { if (host) teardown(); return; }
+    if (typeof WIBX.listKind !== 'function') return;
+    if (!WIBX.listKind(location.pathname)) { if (host) teardown(); return; }
     if (!host) { mount(); return; }
     if (mountedPath !== location.pathname) {
       mountedPath = location.pathname;
@@ -446,8 +449,69 @@
       sync();
     });
   }
+  const RED = '#f4212e';
+  const BLOCK_ICON = 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 0 1 6.32 12.9L7.1 5.68A7.96 7.96 0 0 1 12 4ZM4 12c0-1.85.63-3.55 1.68-4.9L16.9 18.32A8 8 0 0 1 4 12Z';
+  function paintRed(item) {
+    for (const el of [item, ...item.querySelectorAll('*')]) el.style.setProperty('color', RED, 'important');
+  }
+  // Copies an existing X menu item so the added entry matches X's own menu styling.
+  function menuItem(sample, label, url) {
+    const item = sample.cloneNode(true);
+    for (const el of [item, ...item.querySelectorAll('[data-testid]')]) el.removeAttribute('data-testid');
+    const spans = [...item.querySelectorAll('span')].filter(span => !span.children.length && span.textContent.trim());
+    if (!spans.length) return null;
+    spans[0].textContent = label;
+    for (const extra of spans.slice(1)) extra.remove();
+    const svg = item.querySelector('svg');
+    if (svg) {
+      const path = document.createElementNS(svg.namespaceURI, 'path');
+      path.setAttribute('d', BLOCK_ICON); path.setAttribute('fill', 'currentColor');
+      svg.setAttribute('viewBox', '0 0 24 24'); svg.replaceChildren(path);
+    }
+    item.setAttribute('data-wibx-host', '1');
+    paintRed(item);
+    item.addEventListener('click', event => {
+      if (!event.isTrusted) return;
+      event.preventDefault(); event.stopPropagation();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+      location.assign(url);
+    });
+    return item;
+  }
+  // Adds red Bulk block entries to a post's menu and paints X's own Block entry red.
+  function decorateMenu(event) {
+    if (!event.isTrusted || !(event.target instanceof Element)) return;
+    const caret = event.target.closest('[data-testid="caret"],[data-testid="userActions"]');
+    if (!caret || caret.closest('[data-wibx-host]')) return;
+    const context = caret.closest('article[data-testid="tweet"]') ? WIBX.contextFor(caret) : null;
+    const post = context?.tweetUrl ? WIBX.tweetURL(context.tweetUrl) : '';
+    const own = Boolean(post && context.handle && context.handle.toLowerCase() === WIBX.owner().toLowerCase());
+    const started = Date.now();
+    const tick = () => {
+      const menu = [...document.querySelectorAll('[role="menu"]')].pop();
+      const items = menu ? [...menu.querySelectorAll('[role="menuitem"]')].filter(item => !item.closest('[data-wibx-host]')) : [];
+      if (!items.length) { if (Date.now() - started < 2000) setTimeout(tick, 50); return; }
+      if (menu.querySelector('[data-wibx-bulk]')) return;
+      const block = items.find(item => WIBX.classify(item) === 'block');
+      if (block) paintRed(block);
+      if (!post) return;
+      const lists = own ? [['bulkMenuReposts', 'retweets'], ['bulkMenuLikes', 'likes']] : [['bulkMenuReposts', 'retweets']];
+      let previous = null;
+      for (const [key, list] of lists) {
+        const item = menuItem(block || items[0], t(key), WIBX.listURL(post, list));
+        if (!item) continue;
+        item.dataset.wibxBulk = list;
+        if (previous) previous.after(item);
+        else if (block) block.after(item);
+        else items[0].before(item);
+        previous = item;
+      }
+    };
+    setTimeout(tick, 0);
+  }
   function init() {
     if (!document.body) { document.addEventListener('DOMContentLoaded', init, { once: true }); return; }
+    document.addEventListener('click', decorateMenu, true);
     watchPath(); checkPath();
   }
   init();

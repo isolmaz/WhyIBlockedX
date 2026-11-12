@@ -3,7 +3,7 @@
   const inflight = new Map();
   WIBX.actionListeners = new Set();
   // In-memory copies of X's own GraphQL requests, used only by the bulk block
-  // runner so 1000 likers do not have to be clicked one by one. Never stored.
+  // runner so long liker/reposter lists do not have to be clicked one by one. Never stored.
   WIBX.templates = {};
   WIBX.captureIntent = record => { intent = { ...record, at: Date.now(), requestKey: crypto.randomUUID() }; return intent.requestKey; };
   WIBX.clearIntent = key => { if (!key || intent?.requestKey === key) intent = null; };
@@ -59,7 +59,9 @@
       for (const [name, value] of Object.entries(request.headers || {})) if (allowed(name) && typeof value === 'string') headers[name] = value;
       const template = { url: request.url, method: request.method, headers, body: typeof request.body === 'string' && request.body.length <= 200000 ? request.body : null };
       if (data.kind === 'block') WIBX.templates.block = template;
-      if (data.kind === 'likes') WIBX.templates.likes = template;
+      const op = new URL(request.url).pathname.split('/').pop();
+      const list = op === 'Retweeters' ? 'retweets' : op === 'Favoriters' ? 'likes' : '';
+      if (data.kind === 'list' && list) WIBX.templates.list = { ...template, list };
       return;
     }
     if (typeof data.id !== 'string' || data.id.length > 80) return;

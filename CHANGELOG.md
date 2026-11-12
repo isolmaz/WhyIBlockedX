@@ -1,5 +1,12 @@
 # Değişiklik günlüğü
 
+## 0.7.0 — 12 Kasım 2026
+
+### Yeni
+- **Gönderinin ⋯ menüsünde kırmızı Toplu engelle.** Her gönderide **Toplu engelle: repost edenler**, kendi gönderilerinde ayrıca **Toplu engelle: beğenenler** çıkar. X beğenenleri yalnız gönderinin sahibine gösterdiği için başkasının gönderisinde beğenenler engellenemez.
+- Toplu engelleme repost edenler sayfasında da çalışır; popup’taki **Toplu engelle** artık repost edenler sayfasını açar.
+- Menülerde X’in kendi **Engelle** seçeneği kırmızı görünür.
+
 ## 0.6.0 — 12 Kasım 2026
 
 ### Yeni

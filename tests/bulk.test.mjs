@@ -21,22 +21,23 @@ class FakeElement {
   click() { for (const fn of this.listeners.click || []) fn({ isTrusted: true, detail: 1 }); }
 }
 
-function likesTemplate(tweetId) {
+function listTemplate(tweetId, list = 'likes') {
   const variables = encodeURIComponent(JSON.stringify({ tweetId, count: 20 }));
-  return { url: `https://x.com/i/api/graphql/q/Favoriters?variables=${variables}`, method: 'GET', headers: {}, body: null };
+  const op = list === 'retweets' ? 'Retweeters' : 'Favoriters';
+  return { url: `https://x.com/i/api/graphql/q/${op}?variables=${variables}`, method: 'GET', headers: {}, body: null, list };
 }
 const blockTemplate = { url: 'https://x.com/i/api/graphql/q/BlockUser', method: 'POST', headers: {}, body: JSON.stringify({ variables: { user_id: '0' } }) };
 
-function likesBody(handles) {
+function listBody(handles, root = 'favoriters_timeline') {
   return {
-    data: { favoriters_timeline: { timeline: { instructions: [{ entries: handles.map((handle, index) => ({
+    data: { [root]: { timeline: { instructions: [{ entries: handles.map((handle, index) => ({
       content: { itemContent: { user_results: { result: { __typename: 'User', rest_id: String(index + 1), legacy: { screen_name: handle, name: handle } } } } }
     })) }] } } }
   };
 }
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
-// Loads bulk.js against a minimal fake X likes page and returns handles to drive it.
+// Loads bulk.js against a minimal fake X likes or reposts page and returns handles to drive it.
 function harness({ path = '/alice/status/123/likes', visible = [], likes, runAction, saveSkipped = 0 }) {
   const created = [], windowListeners = {}, blockCalls = [], uiAttempts = [], sent = [];
   const column = { querySelectorAll: () => page.visible.map(handle => ({ handle, isConnected: true, closest: () => null, querySelectorAll: () => [], querySelector: () => ({}) })) };
@@ -102,9 +103,9 @@ test('a failed liker load confirms only visible users and never blocks a reloade
   let loads = 0;
   const h = harness({
     visible: ['v1'],
-    likes: async () => (++loads === 1 ? json(429, {}) : json(200, likesBody(['v1', 'u1', 'u2', 'u3']))),
+    likes: async () => (++loads === 1 ? json(429, {}) : json(200, listBody(['v1', 'u1', 'u2', 'u3']))),
   });
-  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  h.sandbox.WIBX.templates.list = listTemplate('123');
   h.sandbox.WIBX.templates.block = blockTemplate;
   h.primary.click();
   await until(() => h.host.dataset.state === 'confirm', 'confirm');
@@ -121,22 +122,22 @@ test('a liker load from a previous likes page cannot fill the confirmation on th
   const h = harness({
     likes: (tweetId) => new Promise(resolve => { pending[tweetId] = resolve; }),
   });
-  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  h.sandbox.WIBX.templates.list = listTemplate('123');
   h.sandbox.WIBX.templates.block = blockTemplate;
   h.primary.click();
   await until(() => pending['123'], 'first load');
 
   h.navigate('/bob/status/456/likes');
   await until(() => h.host.dataset.state === 'idle', 'idle after navigation');
-  h.sandbox.WIBX.templates.likes = likesTemplate('456');
+  h.sandbox.WIBX.templates.list = listTemplate('456');
   h.primary.click();
   await until(() => pending['456'], 'second load');
 
-  pending['123'](json(200, likesBody(['a1', 'a2'])));
+  pending['123'](json(200, listBody(['a1', 'a2'])));
   await new Promise(resolve => setTimeout(resolve, 20));
   assert.equal(h.host.dataset.state, 'loading');
 
-  pending['456'](json(200, likesBody(['b1'])));
+  pending['456'](json(200, listBody(['b1'])));
   await until(() => h.host.dataset.state === 'confirm', 'confirm');
   assert.equal(h.countLine.textContent, 'bulkFound:1');
   h.primary.click();
@@ -147,10 +148,10 @@ test('a liker load from a previous likes page cannot fill the confirmation on th
 test('UI warm-up blocks only confirmed likers and pauses after three failures', async () => {
   const h = harness({
     visible: ['x9', 'u1', 'u2', 'u3', 'u4'],
-    likes: async () => json(200, likesBody(['u1', 'u2', 'u3', 'u4'])),
+    likes: async () => json(200, listBody(['u1', 'u2', 'u3', 'u4'])),
     runAction: async () => { throw Error('boom'); },
   });
-  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  h.sandbox.WIBX.templates.list = listTemplate('123');
   h.primary.click();
   await until(() => h.host.dataset.state === 'confirm', 'confirm');
   assert.equal(h.countLine.textContent, 'bulkFound:4');
@@ -162,8 +163,8 @@ test('UI warm-up blocks only confirmed likers and pauses after three failures', 
 });
 
 test('confirming after the URL changed but before the panel reset blocks nobody', async () => {
-  const h = harness({ likes: async () => json(200, likesBody(['a1', 'a2'])) });
-  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  const h = harness({ likes: async () => json(200, listBody(['a1', 'a2'])) });
+  h.sandbox.WIBX.templates.list = listTemplate('123');
   h.sandbox.WIBX.templates.block = blockTemplate;
   h.primary.click();
   await until(() => h.host.dataset.state === 'confirm', 'confirm');
@@ -175,8 +176,8 @@ test('confirming after the URL changed but before the panel reset blocks nobody'
 });
 
 test('fast path counts accounts with an existing record as blocked', async () => {
-  const h = harness({ likes: async () => json(200, likesBody(['a1', 'a2', 'a3'])), saveSkipped: 1 });
-  h.sandbox.WIBX.templates.likes = likesTemplate('123');
+  const h = harness({ likes: async () => json(200, listBody(['a1', 'a2', 'a3'])), saveSkipped: 1 });
+  h.sandbox.WIBX.templates.list = listTemplate('123');
   h.sandbox.WIBX.templates.block = blockTemplate;
   h.primary.click();
   await until(() => h.host.dataset.state === 'confirm', 'confirm');
@@ -184,6 +185,36 @@ test('fast path counts accounts with an existing record as blocked', async () =>
   await until(() => h.host.dataset.state === 'finished', 'finished');
   assert.equal(h.blockCalls.length, 3);
   assert.equal(h.progress.textContent, 'bulkDone:3,0,0');
+});
+
+test('reposts page loads and blocks the full reposter list', async () => {
+  const h = harness({
+    path: '/alice/status/123/retweets',
+    likes: async () => json(200, listBody(['r1', 'r2'], 'retweeters_timeline')),
+  });
+  h.sandbox.WIBX.templates.list = listTemplate('123', 'retweets');
+  h.sandbox.WIBX.templates.block = blockTemplate;
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  assert.equal(h.countLine.textContent, 'bulkFoundReposts:2');
+  assert.equal(h.status.textContent, 'bulkConfirmReposts:2');
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'finished', 'finished');
+  assert.deepEqual(plain(h.blockCalls).sort(), ['1', '2']);
+});
+
+test('a likes template is not used on a reposts page', async () => {
+  let loads = 0;
+  const h = harness({
+    path: '/alice/status/123/retweets',
+    visible: ['v1'],
+    likes: async () => { loads++; return json(200, listBody(['a1', 'a2', 'a3'])); },
+  });
+  h.sandbox.WIBX.templates.list = listTemplate('123', 'likes');
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  assert.equal(loads, 0);
+  assert.equal(h.countLine.textContent, 'bulkFoundReposts:1');
 });
 
 test('observer copies request headers from plain objects, Headers and pairs', async () => {
