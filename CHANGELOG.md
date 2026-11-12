@@ -9,6 +9,7 @@
 
 ### Düzeltme
 - Tam liste ve hızlı engelleme gerçek X’te çalışır: X liste ve engelleme isteklerini XMLHttpRequest ile, engellemeyi REST `blocks/create` ile gönderir; eklenti artık bu istekleri de tanır. Önceden yalnız sayfada görünen hesaplar onaylanıyor ve hızlı yol hiç devreye girmiyordu.
+- X hızlı engelleme isteklerinin hepsini reddederse akış bitmez; onaylanan ve sayfada görünen hesaplar tek tek engellenir. Hız sınırında (429) akış durur.
 
 ## 0.6.0 — 12 Kasım 2026
 

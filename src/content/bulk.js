@@ -305,7 +305,7 @@
     const pending = users.filter(user => !processed.has(user.handle.toLowerCase()));
     if (!pending.length) return true;
     const records = [], base = counts.blocked;
-    let next = 0, done = 0, failed = 0, stopped = false, saved = 0, saveFailed = 0, writeChain = Promise.resolve();
+    let next = 0, done = 0, failed = 0, succeeded = 0, rejected = false, stopped = false, saved = 0, saveFailed = 0, writeChain = Promise.resolve();
     const flush = () => {
       if (!records.length) return writeChain;
       const batch = records.splice(0, 100);
@@ -332,10 +332,11 @@
           await blockRequest(blockTemplate, pending[index]);
           records.push({ handle: pending[index].handle, name: pending[index].name, owner: account, action: 'block', tweetUrl: postURL() });
           processed.add(pending[index].handle.toLowerCase());
+          succeeded++;
           if (records.length >= 100) flush();
         } catch (error) {
           failed++;
-          if ([400, 401, 403, 404, 429].includes(error.status) && !stopped) { stopped = true; note = t('bulkFastFailed'); }
+          if ([400, 401, 403, 404, 429].includes(error.status) && !stopped) { stopped = true; rejected = error.status !== 429; note = t('bulkFastFailed'); }
           if (failed >= 5 && !stopped) { stopped = true; note = t('bulkPaused'); }
         }
         done++;
@@ -348,6 +349,11 @@
       }
     };
     await Promise.all(Array.from({ length: Math.min(FAST_CONCURRENCY, pending.length) }, worker));
+    // X refused every replayed block request: let the one-by-one flow take over. A rate limit (429) would hit that flow too, so it stops instead.
+    if (!succeeded && rejected && token === runToken && !stopRequested && location.pathname === route && WIBX.owner() === account) {
+      counts.failed = 0; note = t('bulkFastFallback'); sync();
+      return false;
+    }
     await flush();
     counts.blocked = base + saved;
     counts.failed = failed + saveFailed;

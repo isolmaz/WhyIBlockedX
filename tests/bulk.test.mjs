@@ -40,7 +40,7 @@ const restBlockTemplate = { url: 'https://x.com/i/api/1.1/blocks/create.json', m
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
 // Loads bulk.js against a minimal fake X likes or reposts page and returns handles to drive it.
-function harness({ path = '/alice/status/123/likes', visible = [], likes, runAction, saveSkipped = 0 }) {
+function harness({ path = '/alice/status/123/likes', visible = [], likes, runAction, saveSkipped = 0, blockStatus = 200 }) {
   const created = [], windowListeners = {}, blockCalls = [], uiAttempts = [], sent = [];
   const column = { querySelectorAll: () => page.visible.map(handle => ({ handle, isConnected: true, closest: () => null, querySelectorAll: () => [], querySelector: () => ({}) })) };
   const body = new FakeElement('body');
@@ -61,7 +61,7 @@ function harness({ path = '/alice/status/123/likes', visible = [], likes, runAct
     window: { addEventListener: (type, fn) => { (windowListeners[type] ||= []).push(fn); } },
     fetch: async (url, init) => {
       if (url.includes('/BlockUser')) { blockCalls.push(JSON.parse(init.body).variables.user_id); return json(200, { data: {} }); }
-      if (url.includes('/blocks/create.json')) { blockCalls.push(new URLSearchParams(init.body).get('user_id')); return json(200, { id_str: '1' }); }
+      if (url.includes('/blocks/create.json')) { blockCalls.push(new URLSearchParams(init.body).get('user_id')); return json(blockStatus, blockStatus === 200 ? { id_str: '1' } : { errors: [{ code: 1 }] }); }
       const tweetId = JSON.parse(new URL(url).searchParams.get('variables')).tweetId;
       return page.likes(tweetId);
     },
@@ -220,6 +220,40 @@ test('a REST blocks/create template blocks the full reposter list in X\'s curren
   await until(() => h.host.dataset.state === 'finished', 'finished');
   assert.deepEqual(plain(h.blockCalls).sort(), ['1', '2', '3']);
   assert.deepEqual(plain(h.uiAttempts), []);
+});
+
+test('when X rejects every replayed block, confirmed visible accounts are blocked one by one', async () => {
+  const h = harness({
+    path: '/alice/status/123/retweets',
+    visible: ['r1', 'x9'],
+    likes: async () => json(200, listBody(['r1', 'r2'], 'retweeters_timeline', 'core')),
+    blockStatus: 403,
+  });
+  h.sandbox.WIBX.templates.list = listTemplate('123', 'retweets');
+  h.sandbox.WIBX.templates.block = restBlockTemplate;
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'finished', 'finished');
+  assert.ok(h.blockCalls.length > 0, 'fast path was tried first');
+  assert.deepEqual(plain(h.uiAttempts), ['r1']);
+});
+
+test('a rate-limited fast path stops instead of falling back', async () => {
+  const h = harness({
+    path: '/alice/status/123/retweets',
+    visible: ['r1'],
+    likes: async () => json(200, listBody(['r1', 'r2'], 'retweeters_timeline', 'core')),
+    blockStatus: 429,
+  });
+  h.sandbox.WIBX.templates.list = listTemplate('123', 'retweets');
+  h.sandbox.WIBX.templates.block = restBlockTemplate;
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'finished', 'finished');
+  assert.deepEqual(plain(h.uiAttempts), []);
+  assert.equal(h.status.textContent, 'bulkFastFailed');
 });
 
 test('a likes template is not used on a reposts page', async () => {
