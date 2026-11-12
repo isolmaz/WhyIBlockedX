@@ -50,7 +50,7 @@
     if (event.source !== window || event.origin !== location.origin || data?.channel !== 'neden.network.v1') return;
     if (data.phase === 'template') {
       const request = data.request;
-      if (!request || typeof request.url !== 'string' || !/^https:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/api\/graphql\//.test(request.url) || !/^(GET|POST)$/.test(request.method || '')) return;
+      if (!request || typeof request.url !== 'string' || !/^https:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/api\/(?:graphql\/|1\.1\/blocks\/create\.json(?:$|\?))/.test(request.url) || !/^(GET|POST)$/.test(request.method || '')) return;
       const allowed = name => {
         const key = name.toLowerCase();
         return key === 'authorization' || key === 'x-csrf-token' || key === 'content-type' || key === 'accept' || key.startsWith('x-twitter-') || key.startsWith('x-client-');

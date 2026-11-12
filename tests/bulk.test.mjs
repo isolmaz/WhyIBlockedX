@@ -28,13 +28,15 @@ function listTemplate(tweetId, list = 'likes') {
 }
 const blockTemplate = { url: 'https://x.com/i/api/graphql/q/BlockUser', method: 'POST', headers: {}, body: JSON.stringify({ variables: { user_id: '0' } }) };
 
-function listBody(handles, root = 'favoriters_timeline') {
+// `shape: 'core'` matches X's current user objects, which carry screen_name under core.
+function listBody(handles, root = 'favoriters_timeline', shape = 'legacy') {
   return {
     data: { [root]: { timeline: { instructions: [{ entries: handles.map((handle, index) => ({
-      content: { itemContent: { user_results: { result: { __typename: 'User', rest_id: String(index + 1), legacy: { screen_name: handle, name: handle } } } } }
+      content: { itemContent: { user_results: { result: { __typename: 'User', rest_id: String(index + 1), [shape]: { screen_name: handle, name: handle } } } } }
     })) }] } } }
   };
 }
+const restBlockTemplate = { url: 'https://x.com/i/api/1.1/blocks/create.json', method: 'POST', headers: {}, body: 'user_id=0' };
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 
 // Loads bulk.js against a minimal fake X likes or reposts page and returns handles to drive it.
@@ -50,7 +52,7 @@ function harness({ path = '/alice/status/123/likes', visible = [], likes, runAct
   };
   const page = { visible, likes };
   const sandbox = {
-    URL, console, JSON, Promise, Error, Map, Set, Math,
+    URL, URLSearchParams, console, JSON, Promise, Error, Map, Set, Math,
     setTimeout: (fn) => setTimeout(fn, 0), clearTimeout,
     AbortSignal: {},
     MutationObserver: class { observe() {} disconnect() {} },
@@ -59,6 +61,7 @@ function harness({ path = '/alice/status/123/likes', visible = [], likes, runAct
     window: { addEventListener: (type, fn) => { (windowListeners[type] ||= []).push(fn); } },
     fetch: async (url, init) => {
       if (url.includes('/BlockUser')) { blockCalls.push(JSON.parse(init.body).variables.user_id); return json(200, { data: {} }); }
+      if (url.includes('/blocks/create.json')) { blockCalls.push(new URLSearchParams(init.body).get('user_id')); return json(200, { id_str: '1' }); }
       const tweetId = JSON.parse(new URL(url).searchParams.get('variables')).tweetId;
       return page.likes(tweetId);
     },
@@ -203,6 +206,22 @@ test('reposts page loads and blocks the full reposter list', async () => {
   assert.deepEqual(plain(h.blockCalls).sort(), ['1', '2']);
 });
 
+test('a REST blocks/create template blocks the full reposter list in X\'s current response shape', async () => {
+  const h = harness({
+    path: '/alice/status/123/retweets',
+    likes: async () => json(200, listBody(['r1', 'r2', 'r3'], 'retweeters_timeline', 'core')),
+  });
+  h.sandbox.WIBX.templates.list = listTemplate('123', 'retweets');
+  h.sandbox.WIBX.templates.block = restBlockTemplate;
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'confirm', 'confirm');
+  assert.equal(h.countLine.textContent, 'bulkFoundReposts:3');
+  h.primary.click();
+  await until(() => h.host.dataset.state === 'finished', 'finished');
+  assert.deepEqual(plain(h.blockCalls).sort(), ['1', '2', '3']);
+  assert.deepEqual(plain(h.uiAttempts), []);
+});
+
 test('a likes template is not used on a reposts page', async () => {
   let loads = 0;
   const h = harness({
@@ -242,4 +261,56 @@ test('observer copies request headers from plain objects, Headers and pairs', as
     assert.ok(template, 'template emitted');
     assert.deepEqual(plain(template.request.headers), expected);
   }
+});
+
+test('observer copies list and REST block templates from XMLHttpRequest', () => {
+  const messages = [];
+  class FakeXHR {
+    constructor() { this.listeners = {}; this.status = 0; this.responseText = '{}'; }
+    open() {} setRequestHeader() {} send() {}
+    addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
+    finish(status) { this.status = status; for (const fn of this.listeners.loadend || []) fn(); }
+  }
+  const sandbox = {
+    URL, URLSearchParams, console, Headers, Promise, Reflect, WeakMap, Set,
+    location: { href: 'https://x.com/alice/status/123/retweets', origin: 'https://x.com' },
+    crypto: { randomUUID: () => 'id' },
+    addEventListener() {},
+    postMessage: (message) => messages.push(message),
+    fetch: async () => ({ ok: true }),
+    XMLHttpRequest: FakeXHR,
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(read('src/content/observer.js'), sandbox, { filename: 'src/content/observer.js' });
+
+  const failedList = new FakeXHR();
+  failedList.open('GET', '/i/api/graphql/q/Retweeters?variables=%7B%7D');
+  failedList.send();
+  failedList.finish(429);
+  assert.equal(messages.filter(message => message.phase === 'template').length, 0);
+
+  const list = new FakeXHR();
+  list.open('GET', '/i/api/graphql/q/Retweeters?variables=%7B%7D');
+  list.setRequestHeader('authorization', 'Bearer t');
+  list.send();
+  assert.equal(messages.filter(message => message.phase === 'template').length, 0, 'list template waits for a successful response');
+  list.finish(200);
+  const listTemplateMessage = messages.find(message => message.phase === 'template');
+  assert.equal(listTemplateMessage.kind, 'list');
+  assert.equal(listTemplateMessage.request.url, 'https://x.com/i/api/graphql/q/Retweeters?variables=%7B%7D');
+  assert.deepEqual(plain(listTemplateMessage.request.headers), { authorization: 'Bearer t' });
+
+  messages.length = 0;
+  const block = new FakeXHR();
+  block.open('POST', 'https://x.com/i/api/1.1/blocks/create.json');
+  block.setRequestHeader('x-csrf-token', 'c');
+  block.send('user_id=42');
+  const blockTemplateMessage = messages.find(message => message.phase === 'template');
+  assert.equal(blockTemplateMessage.kind, 'block');
+  assert.equal(blockTemplateMessage.request.method, 'POST');
+  assert.equal(blockTemplateMessage.request.body, 'user_id=42');
+  assert.deepEqual(plain(blockTemplateMessage.request.headers), { 'x-csrf-token': 'c' });
+  assert.ok(messages.some(message => message.phase === 'start' && message.action === 'block'));
 });

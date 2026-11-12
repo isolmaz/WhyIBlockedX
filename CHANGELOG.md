@@ -7,6 +7,9 @@
 - Toplu engelleme repost edenler sayfasında da çalışır; popup’taki **Toplu engelle** artık repost edenler sayfasını açar.
 - Menülerde X’in kendi **Engelle** seçeneği kırmızı görünür.
 
+### Düzeltme
+- Tam liste ve hızlı engelleme gerçek X’te çalışır: X liste ve engelleme isteklerini XMLHttpRequest ile, engellemeyi REST `blocks/create` ile gönderir; eklenti artık bu istekleri de tanır. Önceden yalnız sayfada görünen hesaplar onaylanıyor ve hızlı yol hiç devreye girmiyordu.
+
 ## 0.6.0 — 12 Kasım 2026
 
 ### Yeni

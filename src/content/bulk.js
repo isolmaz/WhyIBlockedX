@@ -245,12 +245,27 @@
     }
     return [...users.values()].filter(user => user.handle.toLowerCase() !== WIBX.owner().toLowerCase());
   }
+  // X blocks either through REST blocks/create (form body) or GraphQL BlockUser (JSON variables).
+  function blockBody(template, userId) {
+    try {
+      if (!template?.body || template.method !== 'POST') return null;
+      const path = new URL(template.url).pathname;
+      if (/\/1\.1\/blocks\/create\.json$/.test(path)) {
+        const form = new URLSearchParams(template.body);
+        form.delete('screen_name'); form.set('user_id', userId);
+        return form.toString();
+      }
+      if (!/\/BlockUser\/?$/.test(path)) return null;
+      const body = JSON.parse(template.body);
+      if (!body?.variables) return null;
+      body.variables = { ...body.variables, user_id: userId };
+      return JSON.stringify(body);
+    } catch { return null; }
+  }
   async function blockRequest(template, user) {
-    if (!template?.body || template.method !== 'POST') throw Error('template');
-    const body = JSON.parse(template.body);
-    if (!body?.variables) throw Error('template');
-    body.variables = { ...body.variables, user_id: String(user.id) };
-    const init = { method: 'POST', headers: template.headers, body: JSON.stringify(body), credentials: 'include' };
+    const body = blockBody(template, String(user.id));
+    if (!body) throw Error('template');
+    const init = { method: 'POST', headers: template.headers, body, credentials: 'include' };
     if (typeof AbortSignal.timeout === 'function') init.signal = AbortSignal.timeout(15000);
     const response = await fetch(template.url, init);
     let payload = null;
@@ -286,9 +301,7 @@
       if (result === 'none' || !WIBX.templates.block) return false;
     }
     const blockTemplate = WIBX.templates.block;
-    try {
-      if (!/\/BlockUser\/?$/.test(new URL(blockTemplate.url).pathname) || !JSON.parse(blockTemplate.body)?.variables) return false;
-    } catch { return false; }
+    if (!blockBody(blockTemplate, '0')) return false;
     const pending = users.filter(user => !processed.has(user.handle.toLowerCase()));
     if (!pending.length) return true;
     const records = [], base = counts.blocked;

@@ -98,15 +98,30 @@
     }
     return result;
   };
+  // X's own API client uses XMLHttpRequest for lists and blocks/create, so templates are copied here too.
   const requests = new WeakMap();
   const originalOpen = XMLHttpRequest.prototype.open;
+  const originalSetHeader = XMLHttpRequest.prototype.setRequestHeader;
   const originalSend = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.open = function (method, url) {
-    requests.set(this, endpoint(url, method));
+    try {
+      const target = { url: new URL(String(url), location.href).href, method: String(method).toUpperCase() };
+      const action = endpoint(target.url, target.method);
+      requests.set(this, { target, action, list: !action && listEndpoint(target.url, target.method), headers: {} });
+    } catch { requests.delete(this); }
     return Reflect.apply(originalOpen, this, arguments);
   };
-  XMLHttpRequest.prototype.send = function () {
-    const action = requests.get(this);
+  XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+    const request = requests.get(this);
+    if (request) request.headers[name] = String(value);
+    return Reflect.apply(originalSetHeader, this, arguments);
+  };
+  XMLHttpRequest.prototype.send = function (body) {
+    const request = requests.get(this);
+    const action = request?.action;
+    const info = request && (action || request.list) ? { ...request.target, headers: { ...request.headers }, body: typeof body === 'string' ? body : body instanceof URLSearchParams ? body.toString() : null } : null;
+    if (action === 'block' || action === 'mute') emit({ phase: 'template', kind: action, request: info });
+    if (request?.list) this.addEventListener('loadend', () => { if (this.status >= 200 && this.status < 300) emit({ phase: 'template', kind: 'list', request: info }); }, { once: true });
     if (action) {
       const id = crypto.randomUUID();
       emit({ phase: 'start', id, action });
