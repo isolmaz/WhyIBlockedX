@@ -336,7 +336,7 @@
     if (hasUnblock(cell)) return { code: 'already' };
     const menu = cell.querySelector('[data-testid="userActions"]');
     if (!menu) return { code: 'nomenu' };
-    const context = { handle: entry.handle, owner: WIBX.owner(), scope: 'Lists', path: location.pathname, at: Date.now(), tweetUrl: postURL() };
+    const context = { handle: entry.handle, owner: WIBX.owner(), scope: 'Lists', path: location.pathname, at: Date.now(), tweetUrl: postURL(), bulk: true };
     try {
       await WIBX.runAction({ context, menu, kind: 'block', action: 'block', silent: true });
       return { code: 'ok' };

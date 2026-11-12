@@ -98,7 +98,7 @@ async function run(message, trustedUI) {
     const input = message.record || {};
     const rows = await records();
     const record = normalizeRecord(input, trustedUI ? 'manual' : 'observed');
-    if (!trustedUI && !(await settings()).autoTweet) { record.tweetUrl = ''; record.tweetText = ''; }
+    if (!trustedUI && !input.bulk && !(await settings()).autoTweet) { record.tweetUrl = ''; record.tweetText = ''; }
     rows.unshift(record);
     await chrome.storage.local.set({ [KEY]: rows });
     return { record };
