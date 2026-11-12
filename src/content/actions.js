@@ -44,9 +44,9 @@
     (document.head || document.documentElement).append(css);
   }
   function closeMenu() { document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true})); document.dispatchEvent(new KeyboardEvent('keyup',{key:'Escape',code:'Escape',bubbles:true})); }
-  WIBX.runAction = async ({context,element,menu,kind,action,report}) => {
+  WIBX.runAction = async ({context,element,menu,kind,action,report,silent}) => {
     // These checks run before the try/finally below; report them here so the intercepted click does not fail silently.
-    const reject = message => { report?.(message); showStatus(message); return Error(message); };
+    const reject = message => { report?.(message); if(!silent) showStatus(message); return Error(message); };
     if (active) throw reject(WIBX.t('errBusy'));
     if (!context?.handle) throw reject(WIBX.t('errNoTarget'));
     const route = location.pathname, account = WIBX.owner();
@@ -97,9 +97,9 @@
       document.dispatchEvent(new Event('wibx-refresh'));
       const message = WIBX.t('done'+names[action],context.handle)+(outcome.storageFailed ? WIBX.t('storageFailed') : '');
       report?.(message);
-      if (WIBX.prefs.showUndo) showStatus(message,{...context},inverse[action],menu || context.menu,outcome.storageFailed);
+      if (!silent && WIBX.prefs.showUndo) showStatus(message,{...context},inverse[action],menu || context.menu,outcome.storageFailed);
       return outcome;
-    } catch(error) { report?.(error.message); showStatus(error.message); throw error; }
+    } catch(error) { report?.(error.message); if(!silent) showStatus(error.message); throw error; }
     finally { WIBX.clearIntent(requestKey); WIBX.actionListeners.delete(listener); if (menu && drivenMenu?.isConnected) closeMenu(); delete document.documentElement.dataset.wibxRunning; delete document.documentElement.dataset.wibxHiddenMenu; active=null; WIBX.actionBusy=false; document.dispatchEvent(new Event('wibx-refresh')); }
   };
   // Same shape as X's own toast: accent background, white text, bold inline action.

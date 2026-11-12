@@ -1,4 +1,4 @@
-/* Observe only block/mute responses. No requests, tokens, cookies or headers are saved. */
+/* Observe block/mute responses and pass X's own block/likes request templates to the extension's memory. Nothing is saved to storage. */
 (() => {
   // Runs before X installs shortcuts. Keep the browser's native typing/paste defaults.
   const consumed = new Set();
@@ -25,6 +25,40 @@
     return null;
   }
   function emit(data) { window.postMessage({ channel: CHANNEL, ...data }, location.origin); }
+  // Request templates are kept in memory only so the isolated world can replay
+  // X's own GraphQL calls for a fast bulk block. Nothing here is stored.
+  const LIKES = /\/graphql\/[^/]+\/(?:Favoriters|Likes)$/;
+  function likesEndpoint(value, method) {
+    try {
+      const url = new URL(value, location.href);
+      return /(^|\.)(x\.com|twitter\.com)$/.test(url.hostname) && /^(GET|POST)$/.test(method?.toUpperCase() || '') && LIKES.test(url.pathname);
+    } catch {}
+    return false;
+  }
+  function headerObject(source) {
+    const out = {};
+    if (!source) return out;
+    if (Array.isArray(source)) {
+      for (const pair of source) if (pair?.length === 2) out[pair[0]] = pair[1];
+    } else if (typeof source.forEach === 'function') {
+      source.forEach((value, key) => { out[key] = value; });
+    } else {
+      for (const [key, value] of Object.entries(source)) out[key] = value;
+    }
+    return out;
+  }
+  function requestTarget(input, init) {
+    const raw = typeof input === 'string' || input instanceof URL ? String(input) : input?.url;
+    return { url: new URL(raw || location.href, location.href).href, method: (init?.method || input?.method || 'GET').toUpperCase() };
+  }
+  function requestInfo(input, init, target = requestTarget(input, init)) {
+    const headers = headerObject(init?.headers || input?.headers);
+    let body = init?.body;
+    if (body == null && input && typeof input !== 'string' && !(input instanceof URL)) body = input.body;
+    if (body instanceof URLSearchParams) body = body.toString();
+    if (typeof body !== 'string') body = null;
+    return { url: target.url, method: target.method, headers, body };
+  }
   function identity(body, depth = 0) {
     if (!body || typeof body !== 'object' || depth > 7) return null;
     if (/^[A-Za-z0-9_]{1,15}$/.test(body.screen_name || '')) return { handle: body.screen_name, name: typeof body.name === 'string' ? body.name.slice(0, 150) : '' };
@@ -42,15 +76,26 @@
   }
   const originalFetch = window.fetch;
   window.fetch = function (input, init) {
-    const action = endpoint(typeof input === 'string' || input instanceof URL ? String(input) : input?.url, init?.method || input?.method || 'GET');
-    if (!action) return Reflect.apply(originalFetch, this, arguments);
-    const id = crypto.randomUUID();
-    emit({ phase: 'start', id, action });
+    const target = requestTarget(input, init);
+    const action = endpoint(target.url, target.method);
+    const likes = !action && likesEndpoint(target.url, target.method);
+    if (!action && !likes) return Reflect.apply(originalFetch, this, arguments);
+    const info = requestInfo(input, init, target);
+    const id = action ? crypto.randomUUID() : '';
+    if (action && (action === 'block' || action === 'mute')) emit({ phase: 'template', kind: action, request: info });
+    if (action) emit({ phase: 'start', id, action });
     let result;
-    try { result = Reflect.apply(originalFetch, this, arguments); } catch (error) { finish(id, 0, null); throw error; }
-    result.then(response => {
-      response.clone().json().then(body => finish(id, response.status, body), () => finish(id, 0, null));
-    }, () => finish(id, 0, null)).catch(() => {});
+    try { result = Reflect.apply(originalFetch, this, arguments); } catch (error) { if (action) finish(id, 0, null); throw error; }
+    if (action) {
+      result.then(response => {
+        response.clone().json().then(body => finish(id, response.status, body), () => finish(id, 0, null));
+      }, () => finish(id, 0, null)).catch(() => {});
+    }
+    if (likes) {
+      result.then(response => {
+        if (response.ok) emit({ phase: 'template', kind: 'likes', request: info });
+      }, () => {}).catch(() => {});
+    }
     return result;
   };
   const requests = new WeakMap();
