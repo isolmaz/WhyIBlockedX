@@ -73,7 +73,7 @@ Everything stays in your browser's local storage. No servers, accounts, sync or 
 2. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**.
 3. **Load unpacked** → select the extracted folder (the one with `manifest.json`), then reload open X tabs.
 
-To update, back up first, extract the new ZIP over the same folder and click **Reload** on the extensions page; your records are kept.
+To update, back up first, copy the new ZIP's contents over the same folder (not into a new folder, which starts with empty records) and click **Reload** on the extensions page; your records are kept.
 
 **From source:** `git clone https://github.com/isolmaz/WhyIBlockedX.git`, then load the cloned folder the same way. To update, run `git pull` and click **Reload**.
 

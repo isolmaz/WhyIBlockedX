@@ -11,11 +11,10 @@ Sürümler [GitHub Releases](https://github.com/isolmaz/WhyIBlockedX/releases)�
 3. `main`’e push et (ya da PR’ı merge et).
 4. [Actions → Release](https://github.com/isolmaz/WhyIBlockedX/actions/workflows/release.yml) CI’ı çalıştırır, `WhyIBlockedX-v0.6.1.zip` paketini oluşturur ve `v0.6.1` release’ini açar. Onay adımı yoktur.
 
-Aynı sürüm için release zaten varsa **publish** işi atlanır; yeni release için sürümü yükselt.
+Aynı sürüm için release zaten varsa **publish** işi atlanır ve günlükte `v0.6.1 is already released` yazar; yeni release için sürümü yükselt.
 
 ## Sorun giderme
 
 | Hata | Çözüm |
 |---|---|
 | `CHANGELOG.md has no '## X ' section` | Bölümü ekle, push et. |
-| `v0.6.1 is already released` | `manifest.json` sürümünü yükselt. |

@@ -17,7 +17,7 @@ Eklenti GitHub Releases üzerinden dağıtılır.
 ## Güncelleme
 
 1. Önce eklentiden **Yedekleme → Yedek indir**.
-2. Aynı klasörü güncelle: `git pull` ya da yeni ZIP'in içeriğini eski klasörün üzerine kopyala.
+2. Aynı klasörü güncelle: `git pull` ya da yeni ZIP'in içeriğini eski klasörün üzerine kopyala. ZIP'i yeni bir klasöre çıkarıp onu yüklersen kayıtlar boş görünür.
 3. Eklentiyi kaldırma; eklentiler sayfasında **Yenile** düğmesine bas.
 4. Açık X sekmelerini yenile.
 
