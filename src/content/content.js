@@ -59,13 +59,7 @@
       for (const [name, value] of Object.entries(request.headers || {})) if (allowed(name) && typeof value === 'string') headers[name] = value;
       const template = { url: request.url, method: request.method, headers, body: typeof request.body === 'string' && request.body.length <= 200000 ? request.body : null };
       if (data.kind === 'block') WIBX.templates.block = template;
-      if (data.kind === 'likes') {
-        const users = Array.isArray(data.users) ? data.users
-          .filter(user => user && /^[A-Za-z0-9_]{1,15}$/.test(user.handle || '') && /^\d{1,30}$/.test(String(user.id || '')))
-          .map(user => ({ id: String(user.id), handle: user.handle, name: typeof user.name === 'string' ? user.name.slice(0, 150) : '' }))
-          .slice(0, 200) : [];
-        WIBX.templates.likes = { ...template, users, cursor: typeof data.cursor === 'string' ? data.cursor : '' };
-      }
+      if (data.kind === 'likes') WIBX.templates.likes = template;
       return;
     }
     if (typeof data.id !== 'string' || data.id.length > 80) return;

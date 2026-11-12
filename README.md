@@ -44,9 +44,9 @@ Search and filter your records, edit reasons, change settings and back up your d
 
 ### 4. Block everyone who liked a post
 
-Open the popup, choose **Bulk block**, paste a post link and press **Open likes page**. On the likes page a compact **Block likers** panel loads the full liker list through X's own session, shows the exact count and asks for confirmation. It then blocks them in parallel through X's own block request, so a large list does not wait on one-by-one UI clicks. If that fast path is unavailable, it falls back to the one-by-one UI and only blocks the already-loaded set you confirmed.
+Open the popup, choose **Bulk block**, paste a post link and press **Open likes page**. On the likes page a compact **Block likers** panel loads the full liker list through X's own session, shows the exact count and asks for confirmation. It then blocks them in parallel through X's own block request, so a large list does not wait on one-by-one UI clicks. If the full list cannot be loaded, the panel shows and confirms only the accounts visible on the page. If the fast path is unavailable, it falls back to the one-by-one UI and blocks only visible accounts from the set you confirmed.
 
-**Stop** stops scheduling new blocks; requests already in flight may finish. Your own account and accounts that already show an unblock control are skipped. Each blocked account gets a normal record with the post link and an empty note. X's rate limits or interface changes can pause the run.
+**Stop** stops scheduling new blocks; requests already in flight may finish. Your own account is always skipped. The one-by-one UI also skips accounts that already show an unblock control; the fast path may send a block request for an account you already block, but no duplicate record is created. Each blocked account gets a normal record with the post link and an empty note. X's rate limits or interface changes can pause the run.
 
 ## Features
 
@@ -107,7 +107,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every pull r
 ```
 find src -name '*.js' -print0 | xargs -0 -n1 node --check   # JS syntax
 node .github/ci/check-manifest.js                      # manifest references and locale JSON
-node --test tests/*.test.mjs                           # URL helpers, i18n parity, markup checks
+node --test tests/*.test.mjs                           # URL helpers, i18n parity, markup and bulk-block flow
 ```
 
 There are no browser end-to-end tests in CI.

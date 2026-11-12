@@ -3,9 +3,9 @@
 ## 0.6.0 — 12 Kasım 2026
 
 ### Yeni
-- **Bir gönderiyi beğenenleri topluca engelle.** Popup ana sayfasında **Toplu engelle** → gönderi bağlantısını yapıştır → **Beğenenler sayfasını aç**. Panel, beğenen listesinin tamamını X’in kendi oturumundaki isteklerle (yalnız bellekte) yükler, **kesin sayıyı** gösterir ve onay ister. Onaydan sonra engellemeler X’in kendi block isteğiyle **paralel** yürür; 1000 kişilik liste tek tek UI tıklaması beklemez. Hızlı yol kullanılamazsa yalnız onaylanan yüklü küme için tek tek arayüz akışına düşer. **Durdur** ile akış istenen anda kesilir.
-- Kendi hesabın ve zaten “engeli kaldır” denetimi gösterenler atlanır. X üst üste hata verirse veya sayfa/hesap değişirse akış durur; hız sınırına takılırsa kalanlar durdurulur.
-- Engellenen her hesap için mevcut geçmişe normal bir yerel kayıt eklenir: kullanıcı adı, X döndürdüyse görünen ad, engelleme işlemi, gönderi bağlantısı ve boş neden. Neden uydurulmaz; beğenen listesi veya istek bilgisi saklanmaz. Yetkilendirme başlıkları yalnız çalışma sırasında bellekte tutulur, depoya yazılmaz. Yeni izin, sunucu, eşitleme veya analitik yok.
+- **Bir gönderiyi beğenenleri topluca engelle.** Popup ana sayfasında **Toplu engelle** → gönderi bağlantısını yapıştır → **Beğenenler sayfasını aç**. Panel, beğenen listesinin tamamını X’in kendi oturumundaki isteklerle (yalnız bellekte) yükler, **kesin sayıyı** gösterir ve onay ister. Onaydan sonra engellemeler X’in kendi block isteğiyle **paralel** yürür; 1000 kişilik liste tek tek UI tıklaması beklemez. Liste tamamen yüklenemezse yalnız sayfada görünen hesaplar onaylatılır. Hızlı yol kullanılamazsa tek tek arayüz akışına düşer ve yalnız onaylanan kümede olup sayfada görünen hesapları engeller. **Durdur** ile akış istenen anda kesilir.
+- Kendi hesabın her zaman atlanır; tek tek arayüz akışı zaten “engeli kaldır” gösterenleri de atlar. Hızlı yol zaten engellenmiş bir hesaba yeniden istek gönderebilir, yinelenen kayıt açılmaz. X üst üste hata verirse veya sayfa/hesap değişirse akış durur; hız sınırına takılırsa kalanlar durdurulur.
+- Engellenen her hesap için mevcut geçmişe normal bir yerel kayıt eklenir: kullanıcı adı, X döndürdüyse görünen ad, engelleme işlemi, gönderi bağlantısı ve boş neden. Neden uydurulmaz; beğenen listesi veya istek bilgisi saklanmaz. Yetkilendirme başlıkları yalnız bellekte, başka sayfaya geçene kadar tutulur; depoya yazılmaz. Yeni izin, sunucu, eşitleme veya analitik yok.
 
 ## 0.5.2 — 7 Ekim 2026
 

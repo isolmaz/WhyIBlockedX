@@ -15,7 +15,7 @@ When you block or mute an account on x.com, the extension saves a record in your
 
 **Bulk block** on a post's likes page creates the same kind of record for each account it blocks: username, display name if X returns it, the block action, the post link and an empty reason. No reason is invented. The liker list and the requests made on x.com are not stored.
 
-For the fast bulk path, the extension copies X's own likes/block request template and its authorization headers into memory for the duration of the run, and sends those requests only back to x.com. They are never written to extension storage, logs, analytics or any other server.
+For the fast bulk path, the extension copies X's own likes/block request template and its authorization headers into memory when x.com loads a likes list or you block an account, keeps it until you navigate to another page, and sends those requests only back to x.com. They are never written to extension storage, logs, analytics or any other server.
 
 It also stores your settings and unsaved note drafts. Nothing else is stored.
 

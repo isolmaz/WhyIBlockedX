@@ -6,7 +6,7 @@
   const jitter = () => 1200 + Math.floor(Math.random() * 601);
   const t = (key, ...values) => WIBX.t(key, ...values);
   let host = null, root = null, els = null, observer = null, mutationTimer = 0, pathTimer = 0;
-  let state = 'idle', note = '', running = false, stopRequested = false, runToken = 0, pendingReset = false;
+  let state = 'idle', note = '', running = false, stopRequested = false, runToken = 0, loadToken = 0, pendingReset = false;
   let counts = { blocked: 0, skipped: 0, failed: 0 }, current = '', failures = 0, processed = new Set();
   let mountedPath = '', count = 0, fastUsers = null, approved = new Set(), paletteCss = '';
 
@@ -81,7 +81,7 @@
     sync();
   }
   function teardown() {
-    runToken++; stopRequested = true; running = false;
+    runToken++; loadToken++; stopRequested = true; running = false;
     observer?.disconnect(); observer = null; clearTimeout(mutationTimer);
     host?.remove();
     host = null; root = null; els = null; mountedPath = ''; count = 0; pendingReset = false;
@@ -131,21 +131,27 @@
       stopRequested = false; count = collect().size;
       fastUsers = null; approved = new Set();
       if (WIBX.templates?.likes) {
+        const token = ++loadToken, route = location.pathname;
+        const isCurrent = () => token === loadToken && location.pathname === route && state === 'loading';
         state = 'loading'; note = t('bulkLoading'); sync();
         try {
-          const users = await allLikers(WIBX.templates.likes);
-          if (stopRequested || state !== 'loading') return;
+          const users = await allLikers(WIBX.templates.likes, isCurrent);
+          if (!isCurrent()) return;
           if (users?.length) { fastUsers = users; count = users.length; }
-        } catch { if (state !== 'loading') return; }
+          else count = collect().size;
+        } catch {
+          if (!isCurrent()) return;
+          count = collect().size;
+        }
       }
       if (!count) { state = 'idle'; note = ''; sync(); return; }
-      approved = new Set(collect().keys());
+      approved = fastUsers ? new Set(fastUsers.map(user => user.handle.toLowerCase())) : new Set(collect().keys());
       state = 'confirm'; note = ''; sync();
     } else if (state === 'confirm') run();
   }
   function onSecondary(event) {
     if (!event?.isTrusted) return;
-    if (state === 'loading') { stopRequested = true; state = 'idle'; note = ''; fastUsers = null; approved = new Set(); count = collect().size; sync(); }
+    if (state === 'loading') { loadToken++; state = 'idle'; note = ''; fastUsers = null; approved = new Set(); count = collect().size; sync(); }
     else if (state === 'confirm') { state = 'idle'; note = ''; fastUsers = null; approved = new Set(); count = collect().size; sync(); }
     else if (state === 'running') { stopRequested = true; note = t('bulkStopped'); sync(); }
   }
@@ -219,14 +225,15 @@
     const body = await response.json();
     return { users: usersIn(body), cursor: cursorIn(body) };
   }
-  async function allLikers(template) {
+  async function allLikers(template, isCurrent) {
     const variables = templateVariables(template);
     if (!variables || String(variables.tweetId || variables.tweet_id || '') !== postId()) return null;
     const users = new Map();
     let cursor = null, pages = 0;
     while (users.size < MAX_HANDLES && pages < FAST_PAGES) {
-      if (stopRequested) return null;
+      if (!isCurrent()) return null;
       const page = await likesPage(template, variables, cursor);
+      if (!isCurrent()) return null;
       for (const user of page.users) if (!users.has(user.handle.toLowerCase())) users.set(user.handle.toLowerCase(), user);
       count = users.size;
       note = t('bulkFetching', count); sync();
@@ -249,29 +256,31 @@
     if (payload && (payload.error || (Array.isArray(payload.errors) && payload.errors.length))) throw Error('block-api');
     return true;
   }
-  async function uiBlockOne() {
+  // Blocks one confirmed, visible liker through the UI so X sends a BlockUser request to copy.
+  async function uiBlockOne(token, route, account) {
     for (const [key, entry] of collect()) {
-      if (processed.has(key)) continue;
-      processed.add(key);
+      if (token !== runToken || stopRequested) return 'stop';
+      if (location.pathname !== route || WIBX.owner() !== account) { note = t('bulkPageChanged'); return 'stop'; }
+      if (!approved.has(key) || processed.has(key)) continue;
+      processed.add(key); current = entry.handle; sync();
       const result = await attempt(entry.handle, key);
-      if (result === 'blocked') return true;
-      if (result === 'stop' || result === 'paused') return false;
+      current = '';
+      if (result === 'blocked') return 'blocked';
+      if (result === 'paused') { note = t('bulkPaused'); return 'stop'; }
+      if (result === 'stop') return 'stop';
     }
-    return false;
+    return 'none';
   }
   async function runFast(token, route, account) {
-    const likes = WIBX.templates?.likes;
-    if (!likes || !WIBX.isLikesPath(location.pathname)) return false;
-    let users = fastUsers;
-    if (!users) {
-      try { users = await allLikers(likes); } catch { return false; }
-    }
+    if (!WIBX.templates?.likes || !WIBX.isLikesPath(location.pathname)) return false;
+    const users = fastUsers;
     if (!users?.length) return false;
     if (token !== runToken || stopRequested || location.pathname !== route || WIBX.owner() !== account) return true;
     if (!WIBX.templates.block) {
       note = t('bulkFastFallback'); sync();
-      if (!(await uiBlockOne())) return false;
-      if (!WIBX.templates.block) return false;
+      const result = await uiBlockOne(token, route, account);
+      if (result === 'stop') return true;
+      if (result === 'none' || !WIBX.templates.block) return false;
     }
     const blockTemplate = WIBX.templates.block;
     try {

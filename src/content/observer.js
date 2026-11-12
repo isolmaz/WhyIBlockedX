@@ -1,4 +1,4 @@
-/* Observe only block/mute responses. No requests, tokens, cookies or headers are saved. */
+/* Observe block/mute responses and pass X's own block/likes request templates to the extension's memory. Nothing is saved to storage. */
 (() => {
   // Runs before X installs shortcuts. Keep the browser's native typing/paste defaults.
   const consumed = new Set();
@@ -38,9 +38,13 @@
   function headerObject(source) {
     const out = {};
     if (!source) return out;
-    if (typeof source.forEach === 'function' && !Array.isArray(source)) source.forEach((value, key) => { out[key] = value; });
-    else if (Array.isArray(source)) for (const pair of source) if (pair?.length === 2) out[pair[0]] = pair[1];
-    else for (const [key, value] of Object.entries(source)) out[key] = value;
+    if (Array.isArray(source)) {
+      for (const pair of source) if (pair?.length === 2) out[pair[0]] = pair[1];
+    } else if (typeof source.forEach === 'function') {
+      source.forEach((value, key) => { out[key] = value; });
+    } else {
+      for (const [key, value] of Object.entries(source)) out[key] = value;
+    }
     return out;
   }
   function requestTarget(input, init) {
@@ -54,42 +58,6 @@
     if (body instanceof URLSearchParams) body = body.toString();
     if (typeof body !== 'string') body = null;
     return { url: target.url, method: target.method, headers, body };
-  }
-  function timelineRoot(body) {
-    const names = ['favoriters_timeline', 'likes_timeline'], queue = [body];
-    while (queue.length) {
-      const node = queue.shift();
-      if (!node || typeof node !== 'object') continue;
-      for (const name of names) if (node[name] && typeof node[name] === 'object') return node[name];
-      for (const value of Object.values(node)) if (value && typeof value === 'object') queue.push(value);
-    }
-    return null;
-  }
-  function collectUsers(body) {
-    const root = timelineRoot(body), users = new Map();
-    if (!root) return [];
-    (function walk(node, depth) {
-      if (!node || typeof node !== 'object' || depth > 12) return;
-      if (node.__typename === 'User' && node.rest_id && node.legacy && typeof node.legacy.screen_name === 'string') {
-        users.set(String(node.rest_id), {
-          id: String(node.rest_id), handle: node.legacy.screen_name,
-          name: typeof node.legacy.name === 'string' ? node.legacy.name.slice(0, 150) : ''
-        });
-      }
-      for (const value of Object.values(node)) if (value && typeof value === 'object') walk(value, depth + 1);
-    })(root, 0);
-    return [...users.values()].slice(0, 200);
-  }
-  function bottomCursor(body) {
-    const root = timelineRoot(body);
-    let found = '';
-    if (!root) return found;
-    (function walk(node, depth) {
-      if (found || !node || typeof node !== 'object' || depth > 12) return;
-      if (node.cursorType === 'Bottom' && typeof node.value === 'string') { found = node.value; return; }
-      for (const value of Object.values(node)) if (value && typeof value === 'object') walk(value, depth + 1);
-    })(root, 0);
-    return found;
   }
   function identity(body, depth = 0) {
     if (!body || typeof body !== 'object' || depth > 7) return null;
@@ -125,10 +93,7 @@
     }
     if (likes) {
       result.then(response => {
-        response.clone().json().then(body => emit({
-          phase: 'template', kind: 'likes', request: info,
-          users: collectUsers(body), cursor: bottomCursor(body)
-        }), () => {});
+        if (response.ok) emit({ phase: 'template', kind: 'likes', request: info });
       }, () => {}).catch(() => {});
     }
     return result;

@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 const shared = fs.readFileSync(new URL('src/shared.js', root), 'utf8');
